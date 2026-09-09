@@ -1,0 +1,459 @@
+\chapter{Scope, User Stories, and Playable Definition}
+\label{chap:scope}
+
+\section{Purpose}
+
+The purpose of the project is to design and implement a desktop maze-chase game using C\# and the .NET platform. The game is inspired by the core mechanics of \emph{Pac-Man}, but replaces the original characters and theme with a mouse pursued by cats. The player controls the mouse through a maze, collects cheese, avoids cats, and attempts to obtain the highest possible score.
+
+The project is developed as part of the course \emph{62413 Advanced Object-Oriented Programming using C\# and .NET}. Consequently, the application is not evaluated solely as a game. It must also provide a suitable foundation for demonstrating, analysing, and defending relevant software-engineering decisions. The implementation should therefore emphasize object-oriented design, separation of responsibilities, testability, maintainability, and appropriate use of C\# and .NET features.
+
+This chapter establishes the functional and technical boundaries of the project. It also expresses the intended functionality as user stories and defines the criteria that determine whether an increment, and eventually the complete product, is considered playable.
+
+\section{Product Vision}
+
+The product vision is to create a polished single-level maze-chase game in which the player can immediately understand the objective, control a mouse responsively, recognize different cat behaviours, and complete a full game session from the main menu to the high-score screen.
+
+The application should be sufficiently small to be completed and documented within a thirteen-week course, while its architecture should make later extensions possible. Examples of possible extensions include additional levels, alternative maze layouts, more cat behaviours, sound effects, difficulty settings, and new collectible types. These extensions are outside the minimum scope unless time remains after the core game has reached a stable and playable state.
+
+\section{Stakeholders and Users}
+
+The primary stakeholders are:
+
+\begin{description}
+	\item[Player] The person interacting with the game. The player expects clear controls, understandable rules, responsive feedback, and a complete game loop.
+
+	\item[Developer] The student designing, implementing, testing, and documenting the application. The developer needs an architecture that supports incremental development and demonstrates relevant C\# and .NET knowledge.
+
+	\item[Examiner and instructor] The academic audience evaluating the implementation, technical report, and oral defence. They require traceable design decisions and evidence that the selected language and framework features are understood rather than used artificially.
+\end{description}
+
+\section{Project Scope}
+
+\subsection{Functional Scope}
+
+The application will provide the following core functionality:
+
+\begin{itemize}
+	\item A main menu from which the player can start a game, view high scores, and exit the application.
+	\item One complete maze containing walls, traversable corridors, cheese, power-up items, a mouse spawn position, and cat spawn positions.
+	\item Keyboard control of the mouse in four directions.
+	\item Collision rules that prevent the mouse and cats from moving through walls.
+	\item Cheese collection and a score that increases according to explicit game rules.
+	\item Multiple cats with visibly different targeting or movement strategies.
+	\item Normal, frightened, and returning-home behaviour for cats where applicable.
+	\item Collision detection between the mouse and cats.
+	\item A limited number of player lives and a round reset after the mouse is caught.
+	\item A power-up mechanic that temporarily allows the mouse to catch frightened cats.
+	\item Pause and resume functionality.
+	\item Win, life-lost, and game-over conditions.
+	\item A high-score list stored between application sessions as JSON.
+	\item Clear visual feedback for score, lives, game state, collectibles, and actor modes.
+\end{itemize}
+
+The complete interaction flow is intended to be:
+
+\begin{enumerate}
+	\item The application opens on the main menu.
+	\item The player starts a new game.
+	\item The game enters a short round-starting state before movement begins.
+	\item The player navigates the mouse through the maze and collects cheese.
+	\item The player may pause and subsequently resume the game.
+	\item If a cat catches the mouse, a life is removed and the round is reset when lives remain.
+	\item The player wins by collecting all required cheese, or loses when no lives remain.
+	\item A qualifying score can be submitted to the high-score list.
+	\item The player can return to the main menu and start another game.
+\end{enumerate}
+
+\subsection{Technical Scope}
+
+The application will be implemented as a Windows Presentation Foundation application targeting .NET 10. The intended solution is divided into the following conceptual areas:
+
+\begin{description}
+	\item[Presentation layer] WPF views, XAML resources, input handling, and retained-mode rendering on a \texttt{Canvas}.
+
+	\item[Application layer] View models, commands, navigation, application services, and adaptation between WPF input and domain operations.
+
+	\item[Domain and game-engine layer] Maze data, actors, game rules, state transitions, movement, collision detection, scoring, and cat artificial intelligence. This layer must not depend on WPF.
+
+	\item[Infrastructure layer] JSON-based high-score and settings persistence, file-system interaction, and optional audio support.
+
+	\item[Test layer] Automated tests for deterministic game rules, state transitions, movement, collisions, pathfinding, scoring, and persistence behaviour.
+\end{description}
+
+The design will use Model--View--ViewModel (MVVM) to separate user-interface concerns from application and domain logic. A state machine will control major game states such as the main menu, round start, active play, pause, life lost, game over, and high scores. Cat movement will use interchangeable strategy objects so that different behaviours can be implemented without duplicating the general cat logic.
+
+The game engine will advance using explicit time steps. It should be possible to test an update without displaying a WPF window or relying on the computer's wall-clock time. Random behaviour will similarly be abstracted or seeded where repeatability is required by tests.
+
+\subsection{Quality Scope}
+
+The following quality attributes are prioritized:
+
+\begin{description}
+	\item[Correctness] Movement, collision, scoring, state transitions, and persistence must follow documented rules.
+
+	\item[Testability] Core gameplay must be executable independently of WPF, timers, and physical keyboard input.
+
+	\item[Maintainability] Classes should have focused responsibilities, dependencies should point toward the domain, and duplicated gameplay rules should be avoided.
+
+	\item[Usability] Controls and current game state should be evident to a first-time player. Input should feel responsive, and visual feedback should make collisions and state changes understandable.
+
+	\item[Extensibility] The architecture should permit additional cat strategies, levels, collectibles, and presentation themes without requiring a rewrite of the engine.
+
+	\item[Reliability] Missing or invalid persistence files must not prevent the game from starting. Recoverable failures should result in safe defaults and appropriate feedback.
+\end{description}
+
+Performance is relevant because the game updates continuously, but advanced optimization is not itself a primary objective. Optimization should be based on observed behaviour and measurements. Readability and correctness take precedence over speculative micro-optimizations.
+
+\section{Scope Boundaries}
+
+\subsection{Minimum Viable Scope}
+
+The minimum viable product consists of one complete and replayable level, one player-controlled mouse, several cats with at least two distinguishable movement strategies, cheese collection, scoring, lives, power-up behaviour, pause support, game-over and victory conditions, and persistent high scores. This subset must support a complete journey from application start to the end of a game session.
+
+\subsection{Potential Extensions}
+
+The following features may be added after the minimum viable product is stable:
+
+\begin{itemize}
+	\item Additional levels or selectable maze layouts.
+	\item Difficulty settings that alter speed, lives, or artificial-intelligence behaviour.
+	\item Sound effects and background music.
+	\item Additional collectible or power-up types.
+	\item Animated sprites and richer transitions.
+	\item Rebindable controls and expanded accessibility settings.
+	\item A level editor.
+	\item Local player profiles or extended statistics.
+\end{itemize}
+
+These features are deliberately treated as optional. They must not delay completion, testing, or documentation of the core game.
+
+\subsection{Out of Scope}
+
+Unless the project scope is formally revised, the following are excluded:
+
+\begin{itemize}
+	\item Online multiplayer, networking, and online leaderboards.
+	\item User accounts, authentication, or cloud synchronization.
+	\item Mobile, browser, Linux, or macOS versions.
+	\item A three-dimensional game engine or physics simulation.
+	\item Procedurally generated levels as a core requirement.
+	\item A general-purpose artificial-intelligence framework.
+	\item Mod support or a public plug-in system.
+	\item Exact reproduction of the original \emph{Pac-Man} rules, assets, maze, or characters.
+\end{itemize}
+
+The project will use original or appropriately licensed visual and audio resources. The design will be inspired by a maze-chase genre rather than attempt to reproduce copyrighted game content.
+
+\section{Assumptions and Constraints}
+
+The project is subject to the following assumptions and constraints:
+
+\begin{itemize}
+	\item Development takes place over thirteen teaching weeks alongside report writing and other course activities.
+	\item The application is a desktop program built with C\#, .NET 10, WPF, and XAML.
+	\item The game is primarily operated with a keyboard.
+	\item One polished level is preferable to several incomplete levels.
+	\item The game must remain usable without an internet connection or external service.
+	\item High scores and settings are stored locally in JSON format.
+	\item The game engine must not reference WPF types, enabling deterministic unit testing.
+	\item The user interface may rely on the WPF dispatcher, but domain rules may not assume that they execute inside a window.
+	\item Development decisions must be documented sufficiently for the technical report and oral defence.
+\end{itemize}
+
+\section{User Stories}
+
+The user stories are prioritized using the MoSCoW categories \emph{Must have}, \emph{Should have}, \emph{Could have}, and \emph{Will not have in the current scope}. Each story describes user value, while its acceptance criteria provide observable evidence of completion.
+
+\subsection{Must-Have User Stories}
+
+\subsubsection{US-01: Start a Game}
+
+\textbf{As a player, I want to start a new game from the main menu so that I can begin playing without unnecessary setup.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item The application opens on a main menu.
+	\item A visible command starts a new game.
+	\item Starting a game initializes the maze, actors, score, lives, and collectibles.
+	\item The game transitions through a round-starting state into active play.
+\end{itemize}
+
+\subsubsection{US-02: Control the Mouse}
+
+\textbf{As a player, I want to control the mouse with the keyboard so that I can navigate the maze.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item The player can request movement up, down, left, and right.
+	\item The mouse cannot enter wall tiles.
+	\item A requested turn is applied when it becomes legal at a corridor junction.
+	\item Movement remains responsive during normal play and stops when the game is paused.
+\end{itemize}
+
+\subsubsection{US-03: Collect Cheese and Earn Points}
+
+\textbf{As a player, I want to collect cheese and receive points so that my progress and performance are measurable.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item Cheese disappears when collected by the mouse.
+	\item Each piece of cheese can be collected only once.
+	\item The score increases by the amount defined in the game rules.
+	\item The displayed score is updated after collection.
+\end{itemize}
+
+\subsubsection{US-04: Be Challenged by Cats}
+
+\textbf{As a player, I want cats to pursue the mouse using different behaviours so that the game is challenging and varied.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item Multiple cats move through valid corridors without crossing walls.
+	\item At least two cats select movement targets using distinguishable strategies.
+	\item Cat decisions are based on maze and actor state rather than WPF visual coordinates.
+	\item Equivalent engine inputs produce repeatable behaviour where randomness is not explicitly part of a strategy.
+\end{itemize}
+
+\subsubsection{US-05: Lose a Life When Caught}
+
+\textbf{As a player, I want a clear consequence when a cat catches the mouse so that the game has meaningful risk.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item A collision with a dangerous cat removes exactly one life.
+	\item Active movement stops while the life-lost state is handled.
+	\item If lives remain, actors return to their round-start positions before play resumes.
+	\item If no lives remain, the state machine enters the game-over state.
+\end{itemize}
+
+\subsubsection{US-06: Use a Power-Up}
+
+\textbf{As a player, I want power-ups to make cats temporarily vulnerable so that I can change from avoiding cats to pursuing them.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item Collecting a power-up places eligible cats in a frightened mode for a defined duration.
+	\item Frightened cats are visually distinguishable from dangerous cats.
+	\item Contact with a frightened cat awards points and sends that cat toward its home position.
+	\item Cats return to normal behaviour when the effect expires or their returning-home sequence completes.
+\end{itemize}
+
+\subsubsection{US-07: Pause and Resume}
+
+\textbf{As a player, I want to pause and resume the game so that temporary interruptions do not cause me to lose progress.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item A documented input pauses active play.
+	\item Actors, timers, collisions, and power-up durations do not progress while paused.
+	\item The paused state is clearly visible.
+	\item Resuming returns to the same game session without resetting score, lives, or collectibles.
+\end{itemize}
+
+\subsubsection{US-08: Complete or Lose the Game}
+
+\textbf{As a player, I want clear victory and defeat conditions so that each session has a meaningful conclusion.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item Collecting all required cheese completes the level.
+	\item Losing the final life ends the game.
+	\item The result and final score are displayed.
+	\item The player can continue to score submission where applicable or return to the main menu.
+\end{itemize}
+
+\subsubsection{US-09: Store and View High Scores}
+
+\textbf{As a player, I want qualifying scores to be retained so that I can compare performances across sessions.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item A qualifying final score can be associated with a validated player name.
+	\item High scores are sorted deterministically and limited to a documented maximum count.
+	\item Scores remain available after the application is closed and restarted.
+	\item A missing or malformed score file does not prevent the application from starting.
+\end{itemize}
+
+\subsection{Should-Have User Stories}
+
+\subsubsection{US-10: Understand the Current Game State}
+
+\textbf{As a player, I want a clear heads-up display and visual feedback so that I can understand what is happening without reading technical information.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item Current score and remaining lives are visible during play.
+	\item The mouse, cats, walls, cheese, and power-ups are visually distinguishable.
+	\item Pause, life-lost, victory, and game-over states provide clear feedback.
+	\item The game remains legible at the supported window sizes.
+\end{itemize}
+
+\subsubsection{US-11: Exit or Return Safely}
+
+\textbf{As a player, I want to return to the main menu or close the application through visible controls so that navigation is predictable.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item Relevant non-playing screens provide a route back to the main menu.
+	\item The main menu provides a way to exit the application.
+	\item Leaving a game stops its update loop and releases associated subscriptions or resources.
+\end{itemize}
+
+\subsubsection{US-12: Receive Consistent Game Timing}
+
+\textbf{As a player, I want movement and timed effects to behave consistently so that the outcome does not depend substantially on display refresh rate.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item The engine advances through an explicit and documented update mechanism.
+	\item Temporary effects use elapsed game time rather than a number of rendered frames.
+	\item Paused time is excluded from gameplay duration.
+\end{itemize}
+
+\subsection{Could-Have User Stories}
+
+\begin{itemize}
+	\item \textbf{US-13:} As a player, I want sound effects and music so that game actions have stronger feedback.
+	\item \textbf{US-14:} As a player, I want to select a difficulty so that the challenge matches my experience.
+	\item \textbf{US-15:} As a player, I want more than one maze so that repeated sessions offer additional variety.
+	\item \textbf{US-16:} As a player, I want configurable controls and accessibility options so that the game better matches my needs.
+\end{itemize}
+
+These stories may be refined into detailed acceptance criteria only if they are scheduled for implementation.
+
+\subsection{Development and Academic User Stories}
+
+The project also has development-oriented requirements that support its academic purpose.
+
+\subsubsection{US-17: Test Game Rules Independently}
+
+\textbf{As a developer, I want to run game rules without starting WPF so that behaviour can be verified quickly and deterministically.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item The game-engine project has no dependency on the WPF presentation project.
+	\item Movement, collision, scoring, state transitions, and pathfinding can be exercised by automated tests.
+	\item Tests do not require keyboard input, a visible window, or real-time delays.
+\end{itemize}
+
+\subsubsection{US-18: Extend Cat Behaviour}
+
+\textbf{As a developer, I want cat targeting behaviour to be interchangeable so that new cat personalities can be added without rewriting movement and collision rules.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item Target selection is represented by a focused abstraction.
+	\item Shared movement and collision behaviour is not duplicated between cat types.
+	\item A strategy can be tested using a small in-memory maze and known actor positions.
+\end{itemize}
+
+\subsubsection{US-19: Explain Design Decisions}
+
+\textbf{As an examiner, I want the implementation and report to connect requirements with design choices so that the student's understanding can be assessed.}
+
+\textbf{Acceptance criteria:}
+\begin{itemize}
+	\item Major patterns and abstractions have stated purposes and trade-offs.
+	\item Representative tests provide evidence for central game rules.
+	\item The report distinguishes domain logic, application coordination, infrastructure, and presentation responsibilities.
+	\item Weekly notes preserve significant changes in requirements and architecture.
+\end{itemize}
+
+\section{Definition of a Playable Increment}
+\label{sec:playable-increment}
+
+A weekly increment is considered \emph{playable} when it provides a coherent, demonstrable improvement to the current build rather than merely adding disconnected classes. Not every week must contain the full game loop, especially during early architectural work, but each increment must have an observable purpose and leave the solution in a stable state.
+
+The following checklist applies to each weekly increment:
+
+\begin{itemize}
+	\item[$\square$] The solution builds without compilation errors.
+	\item[$\square$] The application starts without an unhandled exception.
+	\item[$\square$] Previously completed core behaviour still works.
+	\item[$\square$] The week's functionality can be demonstrated through the user interface or an intentionally prepared engine demonstration.
+	\item[$\square$] The demonstrated behaviour has a clear relationship to one or more user stories.
+	\item[$\square$] New domain rules have focused automated tests where practical.
+	\item[$\square$] Existing relevant tests pass.
+	\item[$\square$] Input, update-loop, timer, and event subscriptions introduced during the week are stopped or released correctly.
+	\item[$\square$] No known defect prevents the primary demonstration scenario from being completed.
+	\item[$\square$] Temporary limitations and known defects are recorded rather than hidden.
+	\item[$\square$] The weekly engineering log records implemented functionality, important decisions, test evidence, and the next intended increment.
+	\item[$\square$] Changes are committed to version control in a state that can be restored and demonstrated.
+\end{itemize}
+
+For early weeks, a playable increment may be a rendered maze, a controllable mouse, or a deterministic engine simulation. From the point at which a complete session first exists, all later increments should preserve the route from starting a game to reaching a victory or game-over state.
+
+\section{Definition of the Final Playable Product}
+\label{sec:final-playable-product}
+
+The final product is considered playable only when a user can complete the core interaction flow without developer intervention. The following checklist defines the minimum release threshold.
+
+\subsection{Build and Startup}
+
+\begin{itemize}
+	\item[$\square$] The release configuration builds successfully using the documented .NET version.
+	\item[$\square$] The application can be launched on the intended Windows environment.
+	\item[$\square$] The application opens on a functional main menu.
+	\item[$\square$] Missing optional assets or persistence files do not cause an unhandled exception.
+\end{itemize}
+
+\subsection{Complete Game Loop}
+
+\begin{itemize}
+	\item[$\square$] A player can start a new game from the main menu.
+	\item[$\square$] The maze, mouse, cats, cheese, and power-ups are displayed correctly.
+	\item[$\square$] The mouse can traverse legal corridors using documented keyboard controls.
+	\item[$\square$] Walls consistently block actors.
+	\item[$\square$] Cheese and power-ups can be collected once and are removed from play.
+	\item[$\square$] The score and remaining lives are visible and update according to the rules.
+	\item[$\square$] Cats move without direct player input and exhibit at least two distinguishable strategies.
+	\item[$\square$] Dangerous-cat collisions remove one life and either reset the round or end the game.
+	\item[$\square$] Power-ups temporarily make eligible cats vulnerable.
+	\item[$\square$] Frightened cats can be caught for points and subsequently recover through the defined mode sequence.
+	\item[$\square$] The game can be paused and resumed without advancing gameplay while paused.
+	\item[$\square$] Collecting all required cheese produces a victory outcome.
+	\item[$\square$] Losing all lives produces a game-over outcome.
+	\item[$\square$] The player can return to the main menu and start another session.
+\end{itemize}
+
+\subsection{High Scores and Persistence}
+
+\begin{itemize}
+	\item[$\square$] A qualifying score can be submitted with a valid player name.
+	\item[$\square$] High scores are displayed in the documented order.
+	\item[$\square$] High scores remain available after restarting the application.
+	\item[$\square$] Missing and malformed JSON data are handled without preventing play.
+	\item[$\square$] A failed write is handled predictably and does not corrupt the last valid score data where atomic replacement is supported.
+\end{itemize}
+
+\subsection{Usability and Stability}
+
+\begin{itemize}
+	\item[$\square$] A first-time player can identify the objective and controls from the application or accompanying concise instructions.
+	\item[$\square$] Current menu, playing, paused, life-lost, victory, and game-over states are visually understandable.
+	\item[$\square$] Keyboard focus remains reliable after starting, pausing, resuming, and restarting a game.
+	\item[$\square$] Text and essential game elements remain legible at supported window sizes.
+	\item[$\square$] The application survives repeated start, play, game-over, and return-to-menu cycles without duplicated updates or obvious resource leaks.
+	\item[$\square$] No known defect blocks completion of the core game loop.
+\end{itemize}
+
+\subsection{Technical and Academic Readiness}
+
+\begin{itemize}
+	\item[$\square$] The WPF presentation and game-engine responsibilities are separated by project or clear architectural boundaries.
+	\item[$\square$] Major game states are controlled through explicit state-machine transitions.
+	\item[$\square$] Cat differences are implemented through defensible object-oriented abstractions rather than copied logic.
+	\item[$\square$] Core tests cover movement, collisions, collection, scoring, lives, state transitions, pathfinding, and important cat modes.
+	\item[$\square$] Persistence tests cover valid, missing, and malformed data.
+	\item[$\square$] Automated tests relevant to the release pass.
+	\item[$\square$] Compiler warnings introduced by project code are resolved or explicitly justified.
+	\item[$\square$] Third-party assets have recorded licences and attribution where required.
+	\item[$\square$] The report describes the implemented architecture, alternatives, trade-offs, and test evidence.
+	\item[$\square$] A repeatable demonstration script exists for the oral examination.
+\end{itemize}
+
+\section{Success Criteria}
+
+The project will be successful when it delivers a stable and understandable maze-chase game while providing credible evidence of advanced object-oriented programming with C\# and .NET. Success does not require the largest possible feature set. It requires a complete core game, a coherent architecture, tested rules, documented decisions, and the ability to explain how the implementation satisfies its requirements.
+
+The highest priority is therefore a polished vertical slice: one level that demonstrates the entire game loop and the selected technical concepts. Optional features will be accepted only when they do not reduce the correctness, clarity, testability, or documented quality of that vertical slice.
