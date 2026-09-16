@@ -1,3 +1,9 @@
 <Solution>
-  <Project Path="62413.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/RatMan.App/RatMan.App.csproj" />
+    <Project Path="src/RatMan.Game/RatMan.Game.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RatMan.Tests/RatMan.Tests.csproj" />
+  </Folder>
 </Solution>
