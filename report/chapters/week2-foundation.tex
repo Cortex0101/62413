@@ -1,0 +1,199 @@
+% Required report preamble:
+% \usepackage{tikz}
+% \usetikzlibrary{arrows.meta,positioning,shapes.multipart,fit}
+% Compile from the report directory so the diagram input paths resolve.
+
+\chapter{Week 2: Application Foundation}
+\label{chap:week2-foundation}
+
+\section{Objective}
+
+The objective for Week 2 was to turn the initial WPF template into the first playable RatMan increment. The increment was intentionally limited to a rectangular board and a movable placeholder. Its purpose was to establish architectural boundaries, basic domain types, the Model--View--ViewModel (MVVM) interaction, and an automated test framework before more complex rules are introduced.
+
+The completed increment allows the player to move a rectangle by one grid cell using either the arrow keys or the W, A, S, and D keys. Movement stops at the edge of the board. Although this is not yet a complete game, it forms a vertical slice through input, presentation, application coordination, domain logic, and automated tests.
+
+The Week 2 implementation includes:
+
+\begin{itemize}
+	\item a three-project .NET 10 solution;
+	\item a WPF-independent game library;
+	\item immutable grid coordinates and validated board dimensions;
+	\item a player and a boundary-aware game session;
+	\item reusable MVVM notification and command classes;
+	\item a WPF \texttt{Canvas} containing a visible rectangular grid and player rectangle;
+	\item arrow-key and WASD input bindings; and
+	\item 25 passing MSTest cases covering the implemented domain behaviour.
+\end{itemize}
+
+Walls, cats, collectibles, continuous movement, scoring, timing, and the full game state machine are not part of this increment. Keeping these features outside the Week 2 scope made it possible to verify the foundation before building further behaviour on top of it.
+
+\section{Solution Structure}
+
+The original single WPF project was reorganized into three projects:
+
+\begin{description}
+	\item[\texttt{RatMan.App}] The executable WPF presentation project. It contains XAML, the main window, view models, commands, and conversion from logical grid coordinates to pixel coordinates.
+
+	\item[\texttt{RatMan.Game}] A platform-independent class library containing the current game model and movement rules. It targets \texttt{net10.0} and does not reference WPF.
+
+	\item[\texttt{RatMan.Tests}] An MSTest project containing deterministic tests of the game library. It also targets \texttt{net10.0} and does not need to create a WPF window.
+\end{description}
+
+\input{diagrams/week2-solution-dependencies}
+
+Figure~\ref{fig:week2-solution-dependencies} shows the project references. Both the application and test projects reference \texttt{RatMan.Game}, but the game project does not reference either consumer. This dependency direction is important because domain rules should not depend on keyboard events, XAML controls, pixel coordinates, or a particular test framework.
+
+The separation gives two immediate benefits. First, movement can be tested without starting the graphical application. Second, later presentation changes do not need to modify the core movement rules. For example, replacing the placeholder rectangle with an image should affect the application project but not \texttt{GameSession}.
+
+\section{Core Domain Model}
+
+\subsection{Position and Direction}
+
+\texttt{GridPosition} is implemented as a \texttt{readonly record struct} with a row and column. A value type is suitable because a position is a small value identified entirely by its coordinates. Record semantics provide value equality, which means that two positions with equal row and column values compare as equal. This is useful both in the game rules and in tests.
+
+The \texttt{AdjacentTo} method returns a new position rather than modifying the existing value. It uses a switch expression over the \texttt{Direction} enumeration. The four defined directions are \texttt{Up}, \texttt{Down}, \texttt{Left}, and \texttt{Right}. Keeping directional arithmetic in one method prevents view models and future actors from duplicating row and column calculations.
+
+\subsection{Board Dimensions}
+
+\texttt{BoardSize} is a sealed record that stores the number of rows and columns. Its constructor rejects zero and negative dimensions with \texttt{ArgumentOutOfRangeException}. This establishes the invariant that a successfully constructed board size is positive in both dimensions.
+
+The \texttt{Contains} method checks whether a \texttt{GridPosition} is within the zero-based board bounds. A position is valid when its row is between zero and \texttt{Rows - 1}, and its column is between zero and \texttt{Columns - 1}. This method centralizes the current boundary rule and can later be composed with maze rules that reject walls.
+
+\subsection{Player and Game Session}
+
+\texttt{Player} is a sealed class with a publicly readable position. Position changes are restricted through an internal \texttt{MoveTo} method. Code outside the game assembly can observe the position but cannot move the player without using the game rules.
+
+\texttt{GameSession} is the current entry point for those rules. Its constructor receives a \texttt{BoardSize} and a starting position. It rejects a starting position outside the board, ensuring that a session cannot begin in an invalid state.
+
+Movement is requested through \texttt{TryMovePlayer}. The method calculates the adjacent destination, asks \texttt{BoardSize} whether that position is valid, and moves the player only when the answer is true. It returns a Boolean indicating whether movement occurred. A rejected move therefore has no side effect, which makes the behaviour predictable for both the user interface and tests.
+
+\input{diagrams/week2-class-diagram}
+
+Figure~\ref{fig:week2-class-diagram} presents the most important implemented types. The diagram deliberately shows selected members rather than generated record members or every inherited interface member. Its purpose is to explain responsibilities and dependencies rather than reproduce source code.
+
+\section{MVVM Foundation}
+
+The WPF application uses MVVM to prevent presentation concerns from becoming game rules. The initial implementation contains \texttt{ObservableObject}, \texttt{RelayCommand}, \texttt{BoardCellViewModel}, and \texttt{MainViewModel}.
+
+\subsection{Property Notification}
+
+\texttt{ObservableObject} implements \texttt{INotifyPropertyChanged}. Its \texttt{OnPropertyChanged} method raises the standard .NET property-change event, while \texttt{SetProperty<T>} provides reusable equality checking and notification for future settable view-model properties. The current \texttt{MainViewModel} primarily uses explicit notifications because its player coordinates are calculated from domain state rather than stored as duplicate mutable fields.
+
+\subsection{Commands}
+
+\texttt{RelayCommand} implements WPF's \texttt{ICommand} interface by delegating execution and optional availability checks to .NET delegates. This allows XAML input bindings to invoke view-model behaviour without a key event handler in \texttt{MainWindow.xaml.cs}. The class also provides \texttt{RaiseCanExecuteChanged} for later screens whose command availability depends on state.
+
+\subsection{Main View Model}
+
+\texttt{MainViewModel} creates a 10-by-14 board and a \texttt{GameSession} whose player begins near the centre. The logical game uses zero-based row and column values. The view model projects those values into presentation properties:
+
+\begin{itemize}
+	\item \texttt{BoardWidth} and \texttt{BoardHeight} multiply the board dimensions by the 36-pixel cell size;
+	\item \texttt{PlayerLeft} and \texttt{PlayerTop} convert the player's column and row to Canvas coordinates;
+	\item \texttt{PlayerPosition} formats a one-based position for display to the player; and
+	\item \texttt{BoardCells} contains presentation records used to draw the rectangular grid.
+\end{itemize}
+
+The view model owns the \texttt{MoveCommand}. When the command parameter is a valid \texttt{Direction}, it delegates movement to \texttt{GameSession}. If movement succeeds, it raises property-change notifications for the two player coordinates and the displayed position. If movement is rejected at a boundary, no notification is raised because no visible state changed.
+
+This design keeps one authoritative player position in the domain model. The view model calculates its presentation values from that source instead of maintaining a second copy that could become inconsistent.
+
+\section{Input and Canvas Rendering}
+
+\texttt{MainWindow.xaml} declares eight window-level \texttt{KeyBinding} elements. The arrow keys and corresponding WASD keys share the same command and pass a \texttt{Direction} value as the command parameter. Window-level bindings were selected so movement does not depend on a child control retaining keyboard focus.
+
+The board is rendered using a WPF \texttt{Canvas}. An \texttt{ItemsControl} projects each \texttt{BoardCellViewModel} to a transparent rectangle with an outline, creating the 10-by-14 grid. A separate filled rectangle represents the player. Its attached \texttt{Canvas.Left} and \texttt{Canvas.Top} properties bind to the view model.
+
+These visuals use retained-mode WPF objects, but collision rules do not inspect the rectangles. The domain uses rows and columns, while only the application translates those coordinates into pixels. This distinction will remain important when walls and actor images are introduced.
+
+\input{diagrams/week2-movement-sequence}
+
+Figure~\ref{fig:week2-movement-sequence} follows one input through the application. WPF resolves the pressed key to a direction and executes \texttt{RelayCommand}. The view model requests a move from \texttt{GameSession}, which performs the boundary check. Successful movement results in property notifications and WPF reads the updated values. Rejected movement returns without changing the model or presentation.
+
+\section{Automated Testing}
+
+MSTest was introduced as a dedicated test project so new domain fixtures can be added alongside future features. The tests reference \texttt{RatMan.Game} directly and do not reference \texttt{RatMan.App}. This confirms that the tested behaviour is independent of WPF controls and dispatching.
+
+The initial test suite is divided as shown in Table~\ref{tab:week2-tests}.
+
+\begin{table}[htbp]
+	\centering
+	\begin{tabular}{lrl}
+		\hline
+		\textbf{Fixture} & \textbf{Cases} & \textbf{Responsibility} \\
+		\hline
+		\texttt{GridPositionTests} & 5 & Value equality and four adjacent directions \\
+		\texttt{BoardSizeTests} & 10 & Dimension validation and board containment \\
+		\texttt{GameSessionTests} & 10 & Starting state, movement, repetition, and four edges \\
+		\hline
+		\textbf{Total} & \textbf{25} & All cases passing \\
+		\hline
+	\end{tabular}
+	\caption{Week 2 automated test coverage by fixture. Data rows are counted as individual cases.}
+	\label{tab:week2-tests}
+\end{table}
+
+\texttt{TestGameSessionFactory} supplies sensible defaults for board dimensions and player position. Individual tests override only values relevant to their scenario. This keeps fixtures concise and provides a reusable starting point as further session behaviour is introduced.
+
+Data-driven tests are used where the rule is identical for several inputs. For example, one movement test executes once for each direction, and one boundary test executes once for each edge. This demonstrates the symmetry of the rule without copying four complete test methods.
+
+The solution was validated with the following commands:
+
+\begin{verbatim}
+dotnet build 62413.slnx
+dotnet test tests/RatMan.Tests/RatMan.Tests.csproj --no-build
+\end{verbatim}
+
+The build completed successfully, and the test run reported 25 successful tests, zero failed tests, and zero skipped tests.
+
+\section{Design Decisions and Trade-offs}
+
+\subsection{Logical Coordinates Before Pixel Coordinates}
+
+The engine stores positions as rows and columns rather than pixels. Grid coordinates make boundary rules simple and deterministic, while the view model remains responsible for scaling. The trade-off is that smooth movement is not yet represented. A later movement model may add progress between cells while retaining grid positions for maze decisions.
+
+\subsection{Immutable Positions}
+
+Returning a new \texttt{GridPosition} for adjacent cells prevents partial mutation and supports value-based assertions. It creates small values during movement, but this cost is insignificant at the current scale and is preferable to exposing mutable coordinates.
+
+\subsection{A Small Session Instead of a Complete Engine}
+
+\texttt{GameSession} currently coordinates only the board and player. It would have been possible to anticipate every future system, but doing so would risk abstractions without evidence. The class will evolve when walls, collectibles, cats, and game states introduce concrete requirements.
+
+\subsection{No WPF Tests}
+
+The current automated tests focus on deterministic domain behaviour. Testing exact rendered pixels or simulating WPF keyboard focus would make the suite slower and more fragile. The visual and keyboard interaction remains a manual acceptance check for this increment, while the rules behind it are automated.
+
+\section{Current Limitations}
+
+The following limitations are deliberate and define the starting point for later iterations:
+
+\begin{itemize}
+	\item every board cell is traversable because walls are not represented;
+	\item movement occurs once per key press rather than continuously over time;
+	\item the player is a placeholder rectangle rather than a final mouse asset;
+	\item there are no cats, collectibles, score, lives, or collision rules;
+	\item there is no menu, pause state, or game-state machine;
+	\item board size, cell size, and starting position are currently defined by \texttt{MainViewModel}; and
+	\item visual interaction is verified manually rather than by automated WPF tests.
+\end{itemize}
+
+These limitations do not invalidate the increment. They make its boundary explicit and provide concrete requirements for subsequent weeks.
+
+\section{Week 2 Completion Assessment}
+
+The Week 2 increment satisfies its intended completion criteria:
+
+\begin{itemize}
+	\item The solution has separate application, game, and test projects.
+	\item The game project has no WPF dependency.
+	\item RatMan opens in a titled WPF window with a visible rectangular grid.
+	\item The player rectangle responds to arrow-key and WASD input.
+	\item Each accepted input moves the player by one logical cell.
+	\item Movement stops at all four board edges.
+	\item Input is connected through an MVVM command rather than a window key handler.
+	\item Domain movement can be tested without a WPF window.
+	\item The solution builds and all 25 MSTest cases pass.
+\end{itemize}
+
+The resulting vertical slice is intentionally simple, but it validates the central dependency direction and establishes reusable foundations for the later RatMan game systems.

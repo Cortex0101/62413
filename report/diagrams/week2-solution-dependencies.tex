@@ -1,0 +1,26 @@
+\begin{figure}[htbp]
+	\centering
+	\begin{tikzpicture}[
+		project/.style={
+			draw,
+			rounded corners=2pt,
+			minimum width=4.1cm,
+			minimum height=1.45cm,
+			align=center,
+			fill=blue!7
+		},
+		dependency/.style={-{Latex[length=3mm]}, thick},
+		note/.style={font=\small, align=center}
+	]
+		\node[project] (app) {\textbf{RatMan.App}\\.NET 10 WPF application};
+		\node[project, right=2.4cm of app] (game) {\textbf{RatMan.Game}\\WPF-independent class library};
+		\node[project, below=1.7cm of app] (tests) {\textbf{RatMan.Tests}\\MSTest test project};
+
+		\draw[dependency] (app.east) -- node[above, note] {project reference} (game.west);
+		\draw[dependency] (tests.east) -- node[below, note] {project reference} (game.south west);
+
+		\node[note, below=0.8cm of game] (rule) {The game project has no reference\\to WPF or the application project.};
+	\end{tikzpicture}
+	\caption{Week 2 project dependencies. Both consumers depend on the game engine, while the engine remains independent of presentation and test frameworks.}
+	\label{fig:week2-solution-dependencies}
+\end{figure}

@@ -1,0 +1,107 @@
+\begin{figure}[p]
+	\centering
+	\begin{tikzpicture}[
+		font=\scriptsize,
+		class/.style={
+			draw,
+			rectangle split,
+			rectangle split parts=2,
+			rectangle split part align={center,left},
+			rounded corners=1pt,
+			text width=4.1cm,
+			fill=white
+		},
+		relation/.style={-{Latex[length=2.2mm]}, semithick},
+		inheritance/.style={-{Triangle[open,length=3mm,width=3mm]}, semithick},
+		package/.style={draw, dashed, rounded corners=3pt, inner sep=7pt},
+		label/.style={font=\tiny, fill=white, inner sep=1pt}
+	]
+		\node[class] (position) {
+			\textbf{GridPosition}\newline
+			\textit{readonly record struct}
+			\nodepart{second}
+			+ Row : int\newline
+			+ Column : int\newline
+			+ AdjacentTo(Direction) : GridPosition
+		};
+
+		\node[class, right=0.7cm of position] (board) {
+			\textbf{BoardSize}\newline
+			\textit{sealed record}
+			\nodepart{second}
+			+ Rows : int\newline
+			+ Columns : int\newline
+			+ Contains(GridPosition) : bool
+		};
+
+		\node[class, below=0.8cm of position] (player) {
+			\textbf{Player}\newline
+			\textit{sealed class}
+			\nodepart{second}
+			+ Position : GridPosition\newline
+			\# MoveTo(GridPosition) : void
+		};
+
+		\node[class, below=0.8cm of board] (session) {
+			\textbf{GameSession}\newline
+			\textit{sealed class}
+			\nodepart{second}
+			+ BoardSize : BoardSize\newline
+			+ Player : Player\newline
+			+ TryMovePlayer(Direction) : bool
+		};
+
+		\node[class, below=1.6cm of player] (observable) {
+			\textbf{ObservableObject}\newline
+			\textit{abstract class}
+			\nodepart{second}
+			+ PropertyChanged : event\newline
+			\# OnPropertyChanged() : void\newline
+			\# SetProperty$<$T$>$() : bool
+		};
+
+		\node[class, right=0.7cm of observable] (command) {
+			\textbf{RelayCommand}\newline
+			\textit{sealed class; ICommand}
+			\nodepart{second}
+			+ CanExecute(object) : bool\newline
+			+ Execute(object) : void\newline
+			+ RaiseCanExecuteChanged() : void
+		};
+
+		\node[class, below=0.8cm of observable] (cell) {
+			\textbf{BoardCellViewModel}\newline
+			\textit{sealed record}
+			\nodepart{second}
+			+ Left : double\newline
+			+ Top : double
+		};
+
+		\node[class, below=0.8cm of command] (mainvm) {
+			\textbf{MainViewModel}\newline
+			\textit{sealed class}
+			\nodepart{second}
+			+ BoardCells : IReadOnlyList\newline
+			+ MoveCommand : ICommand\newline
+			+ BoardWidth/BoardHeight : double\newline
+			+ PlayerLeft/PlayerTop : double\newline
+			+ PlayerPosition : string
+		};
+
+		\draw[relation] (position) -- node[label] {parameter} (board);
+		\draw[relation] (player) -- node[label] {position} (position);
+		\draw[relation] (session) -- node[label] {owns} (board);
+		\draw[relation] (session) -- node[label] {owns} (player);
+		\draw[inheritance] (mainvm.west) -| (observable.south);
+		\draw[relation] (mainvm.north) -- node[label] {owns} (command.south);
+		\draw[relation] (mainvm.north east) to[bend left=15] node[label] {coordinates} (session.south);
+		\draw[relation] (mainvm.west) -- node[label] {projects} (cell.east);
+
+		\node[package, fit=(position)(board)(player)(session),
+			  label={[font=\small\bfseries]above:RatMan.Game}] {};
+		\node[package, fit=(observable)(command)(cell)(mainvm),
+			  label={[font=\small\bfseries]below:RatMan.App}] {};
+	\end{tikzpicture}
+	\caption{Selected Week 2 types and relationships. Domain movement remains in \texttt{RatMan.Game}; the view model projects domain state into WPF-friendly coordinates.}
+	\label{fig:week2-class-diagram}
+\end{figure}
