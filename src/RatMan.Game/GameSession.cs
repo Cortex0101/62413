@@ -2,7 +2,12 @@ namespace RatMan.Game;
 
 public sealed class GameSession
 {
-    public GameSession(BoardSize boardSize, GridPosition playerStartingPosition)
+    private readonly HashSet<Wall> walls;
+
+    public GameSession(
+        BoardSize boardSize,
+        GridPosition playerStartingPosition,
+        IEnumerable<Wall>? walls = null)
     {
         ArgumentNullException.ThrowIfNull(boardSize);
 
@@ -14,6 +19,19 @@ public sealed class GameSession
                 "The player must start inside the board.");
         }
 
+        this.walls = walls?.ToHashSet() ?? [];
+
+        foreach (Wall wall in this.walls)
+        {
+            if (!boardSize.Contains(wall.FirstTile) || !boardSize.Contains(wall.SecondTile))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(walls),
+                    wall,
+                    "Every wall must be inside the board.");
+            }
+        }
+
         BoardSize = boardSize;
         Player = new Player(playerStartingPosition);
     }
@@ -22,11 +40,18 @@ public sealed class GameSession
 
     public Player Player { get; }
 
+    public IReadOnlySet<Wall> Walls => walls;
+
     public bool TryMovePlayer(Direction direction)
     {
         GridPosition destination = Player.Position.AdjacentTo(direction);
 
         if (!BoardSize.Contains(destination))
+        {
+            return false;
+        }
+
+        if (walls.Contains(new Wall(Player.Position, destination)))
         {
             return false;
         }

@@ -7,6 +7,7 @@
     <Color x:Key="SecondaryTextColor">#C8C8D0</Color>
     <Color x:Key="AccentColor">#A8C686</Color>
     <Color x:Key="GridLineColor">#3B4052</Color>
+    <Color x:Key="WallColor">#A8C686</Color>
     <Color x:Key="PlayerColor">#F2C14E</Color>
     <Color x:Key="PlayerOutlineColor">#FFF4CF</Color>
 
@@ -16,6 +17,7 @@
     <SolidColorBrush x:Key="SecondaryTextBrush" Color="{StaticResource SecondaryTextColor}" />
     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
     <SolidColorBrush x:Key="GridLineBrush" Color="{StaticResource GridLineColor}" />
+    <SolidColorBrush x:Key="WallBrush" Color="{StaticResource WallColor}" />
     <SolidColorBrush x:Key="PlayerBrush" Color="{StaticResource PlayerColor}" />
     <SolidColorBrush x:Key="PlayerOutlineBrush" Color="{StaticResource PlayerOutlineColor}" />
 

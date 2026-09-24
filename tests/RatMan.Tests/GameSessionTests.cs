@@ -14,6 +14,16 @@ public sealed class GameSessionTests
             () => new GameSession(boardSize, new GridPosition(5, 0)));
     }
 
+    [TestMethod]
+    public void Constructor_WhenWallIsOutsideBoard_Throws()
+    {
+        BoardSize boardSize = new(5, 7);
+        Wall wall = new(new GridPosition(4, 3), new GridPosition(5, 3));
+
+        Assert.ThrowsException<ArgumentOutOfRangeException>(
+            () => new GameSession(boardSize, new GridPosition(2, 3), [wall]));
+    }
+
     [DataTestMethod]
     [DataRow(Direction.Up, 1, 3)]
     [DataRow(Direction.Down, 3, 3)]
@@ -63,5 +73,25 @@ public sealed class GameSessionTests
         session.TryMovePlayer(Direction.Left);
 
         Assert.AreEqual(new GridPosition(3, 3), session.Player.Position);
+    }
+
+    [DataTestMethod]
+    [DataRow(2, 3, Direction.Right)]
+    [DataRow(2, 4, Direction.Left)]
+    public void TryMovePlayer_WhenWallSeparatesTiles_DoesNotMove(
+        int startingRow,
+        int startingColumn,
+        Direction direction)
+    {
+        Wall wall = new(new GridPosition(2, 3), new GridPosition(2, 4));
+        GameSession session = new(
+            new BoardSize(5, 7),
+            new GridPosition(startingRow, startingColumn),
+            [wall]);
+
+        bool moved = session.TryMovePlayer(direction);
+
+        Assert.IsFalse(moved);
+        Assert.AreEqual(new GridPosition(startingRow, startingColumn), session.Player.Position);
     }
 }

@@ -46,6 +46,20 @@ public sealed class AppViewModelTests
     }
 
     [TestMethod]
+    public void Constructor_ProjectsWallsOntoTileBoundaries()
+    {
+        GameViewModel game = new(() => { });
+
+        Assert.AreEqual(7, game.WallSegments.Count);
+        CollectionAssert.Contains(
+            game.WallSegments.ToArray(),
+            new WallSegmentViewModel(108d, 34d, 36d, 4d));
+        CollectionAssert.Contains(
+            game.WallSegments.ToArray(),
+            new WallSegmentViewModel(214d, 36d, 4d, 36d));
+    }
+
+    [TestMethod]
     public void MoveCommand_WhenMoveSucceeds_RaisesProjectionChanges()
     {
         GameViewModel game = new(() => { });
