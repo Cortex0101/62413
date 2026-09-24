@@ -14,4 +14,9 @@
 	<ProjectReference Include="..\RatMan.Game\RatMan.Game.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+	<Resource Include="..\RatMan.Game\assets\img\ratman-spritesheet.png"
+			  Link="Assets\Images\ratman-spritesheet.png" />
+  </ItemGroup>
+
 </Project>

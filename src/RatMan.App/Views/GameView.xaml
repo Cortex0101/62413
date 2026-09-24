@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:game="clr-namespace:RatMan.Game;assembly=RatMan.Game"
              Focusable="True"
-             Loaded="OnLoaded">
+             Loaded="OnLoaded"
+             Unloaded="OnUnloaded">
     <UserControl.InputBindings>
         <KeyBinding Key="Up" Command="{Binding MoveCommand}" CommandParameter="{x:Static game:Direction.Up}" />
         <KeyBinding Key="W" Command="{Binding MoveCommand}" CommandParameter="{x:Static game:Direction.Up}" />
@@ -95,16 +96,16 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <Rectangle Canvas.Left="{Binding PlayerLeft}"
-                           Canvas.Top="{Binding PlayerTop}"
-                           Width="26"
-                           Height="26"
-                           Margin="5"
-                           RadiusX="4"
-                           RadiusY="4"
-                           Fill="{DynamicResource PlayerBrush}"
-                           Stroke="{DynamicResource PlayerOutlineBrush}"
-                           StrokeThickness="2" />
+                <Image Canvas.Left="{Binding PlayerLeft}"
+                       Canvas.Top="{Binding PlayerTop}"
+                       Panel.ZIndex="10"
+                       Width="{DynamicResource GameCellSize}"
+                       Height="{DynamicResource GameCellSize}"
+                       IsHitTestVisible="False"
+                       RenderOptions.BitmapScalingMode="NearestNeighbor"
+                       SnapsToDevicePixels="True"
+                       Source="{Binding PlayerImage}"
+                       Stretch="Uniform" />
             </Canvas>
         </Border>
 

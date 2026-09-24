@@ -1,3 +1,4 @@
+using RatMan.App.Animation;
 using RatMan.App.ViewModels;
 using RatMan.Game;
 
@@ -39,10 +40,10 @@ public sealed class AppViewModelTests
         menu.StartGameCommand.Execute(null);
         GameViewModel game = (GameViewModel)viewModel.ActiveScreen;
 
-        Assert.AreEqual(140, game.BoardCells.Count);
-        Assert.AreEqual(504d, game.BoardWidth);
-        Assert.AreEqual(360d, game.BoardHeight);
-        Assert.AreEqual("Row 6, Column 8", game.PlayerPosition);
+        Assert.AreEqual(128, game.BoardCells.Count);
+        Assert.AreEqual(288d, game.BoardWidth);
+        Assert.AreEqual(576d, game.BoardHeight);
+        Assert.AreEqual("Row 2, Column 2", game.PlayerPosition);
     }
 
     [TestMethod]
@@ -67,29 +68,55 @@ public sealed class AppViewModelTests
         game.PropertyChanged += (_, args) => changedProperties.Add(args.PropertyName);
 
         game.MoveCommand.Execute(Direction.Right);
+        game.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
 
-        Assert.AreEqual("Row 6, Column 9", game.PlayerPosition);
+        Assert.AreEqual("Row 2, Column 3", game.PlayerPosition);
+        Assert.AreEqual(54d, game.PlayerLeft);
         CollectionAssert.IsSubsetOf(
-            new[] { nameof(game.PlayerLeft), nameof(game.PlayerTop), nameof(game.PlayerPosition) },
+            new[] { nameof(game.PlayerLeft), nameof(game.PlayerPosition) },
             changedProperties.ToArray());
     }
 
     [TestMethod]
-    public void MoveCommand_WhenAtBoundary_DoesNotRaiseProjectionChanges()
+    public void MoveCommand_WhenMoveIsBlocked_PlaysReactionWithoutChangingPosition()
     {
         GameViewModel game = new(() => { });
-        int propertyChangeCount = 0;
-        game.PropertyChanged += (_, _) => propertyChangeCount++;
-
-        for (int move = 0; move < 10; move++)
-        {
-            game.MoveCommand.Execute(Direction.Up);
-        }
-
-        propertyChangeCount = 0;
         game.MoveCommand.Execute(Direction.Up);
+        game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
 
-        Assert.AreEqual(0, propertyChangeCount);
-        Assert.AreEqual("Row 1, Column 8", game.PlayerPosition);
+        Assert.AreEqual("Row 1, Column 2", game.PlayerPosition);
+        Assert.AreEqual(PlayerAnimationState.Blocked, game.Player.AnimationState);
+        Assert.AreEqual(Direction.Up, game.Player.FacingDirection);
+
+        game.Advance(TimeSpan.FromMilliseconds(210));
+
+        Assert.AreEqual(PlayerAnimationState.Idle, game.Player.AnimationState);
+        Assert.AreEqual(0d, game.PlayerTop);
+    }
+
+    [TestMethod]
+    public void MoveCommand_WhileMoving_ContinuesInLatestDirectionUntilBlocked()
+    {
+        GameViewModel game = new(() => { });
+
+        game.MoveCommand.Execute(Direction.Right);
+        game.MoveCommand.Execute(Direction.Down);
+        game.MoveCommand.Execute(Direction.Left);
+        game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
+
+        Assert.AreEqual("Row 2, Column 2", game.PlayerPosition);
+        Assert.AreEqual(PlayerAnimationState.Walking, game.Player.AnimationState);
+        Assert.AreEqual(Direction.Left, game.Player.FacingDirection);
+
+        game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
+
+        Assert.AreEqual(36d, game.PlayerLeft);
+        Assert.AreEqual(PlayerAnimationState.Walking, game.Player.AnimationState);
+        Assert.AreEqual(Direction.Left, game.Player.FacingDirection);
+
+        game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
+
+        Assert.AreEqual(0d, game.PlayerLeft);
+        Assert.AreEqual(PlayerAnimationState.Blocked, game.Player.AnimationState);
     }
 }
