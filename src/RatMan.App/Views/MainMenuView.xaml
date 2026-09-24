@@ -1,0 +1,22 @@
+<UserControl x:Class="RatMan.App.Views.MainMenuView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="32">
+        <StackPanel Width="280"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+            <TextBlock Style="{StaticResource ScreenTitleStyle}"
+                       FontSize="44"
+                       Text="{Binding Title}" />
+            <TextBlock Margin="0,8,0,28"
+                       HorizontalAlignment="Center"
+                       Foreground="{DynamicResource SecondaryTextBrush}"
+                       Text="A mouse-and-cats maze chase" />
+            <Button Margin="0,4" Command="{Binding StartGameCommand}" Content="Start Game" />
+            <Button Margin="0,4" Command="{Binding HighScoresCommand}" Content="High Scores" />
+            <Button Margin="0,4" Command="{Binding SettingsCommand}" Content="Settings" />
+            <Button Margin="0,4" Command="{Binding AboutCommand}" Content="About" />
+            <Button Margin="0,20,0,4" Command="{Binding ExitCommand}" Content="Exit" />
+        </StackPanel>
+    </Grid>
+</UserControl>
