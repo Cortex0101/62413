@@ -67,16 +67,16 @@ public sealed class GameViewModel : ScreenViewModel
             return;
         }
 
-        if (Player.TryTakeQueuedDirection(out Direction queuedDirection))
+        Player.SetIdle();
+
+        if (TryStartQueuedMove())
         {
-            Player.SetIdle();
-            TryStartMove(queuedDirection);
+            return;
         }
-        else if (wasWalking)
+
+        if (wasWalking && !TryStartMove(Player.FacingDirection))
         {
-            Direction direction = Player.FacingDirection;
-            Player.SetIdle();
-            TryStartMove(direction);
+            Player.ShowBlocked(Player.FacingDirection);
         }
     }
 
@@ -87,25 +87,41 @@ public sealed class GameViewModel : ScreenViewModel
             return;
         }
 
-        if (Player.IsBusy)
-        {
-            Player.QueueDirection(direction);
-            return;
-        }
+        Player.QueueDirection(direction);
 
-        TryStartMove(direction);
+        if (!Player.IsBusy)
+        {
+            TryStartQueuedMove();
+        }
     }
 
-    private void TryStartMove(Direction direction)
+    private bool TryStartQueuedMove()
+    {
+        if (!Player.TryTakeQueuedDirection(out Direction direction))
+        {
+            return false;
+        }
+
+        if (TryStartMove(direction))
+        {
+            return true;
+        }
+
+        // Keep a blocked turn pending until the player reaches an opening.
+        Player.QueueDirection(direction);
+        return false;
+    }
+
+    private bool TryStartMove(Direction direction)
     {
         if (!gameSession.TryMovePlayer(direction))
         {
-            Player.ShowBlocked(direction);
-            return;
+            return false;
         }
 
         Player.BeginMove(gameSession.Player.Position, direction);
         OnPropertyChanged(nameof(PlayerPosition));
+        return true;
     }
 
     private void OnPlayerPropertyChanged(object? sender, PropertyChangedEventArgs e)

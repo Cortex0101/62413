@@ -59,11 +59,11 @@ dotnet run --project .\src\RatMan.App\RatMan.App.csproj
 
 | Input | Action |
 | --- | --- |
-| Arrow keys | Move the player one grid cell. |
-| W, A, S, D | Move the player one grid cell. |
+| Arrow keys | Start moving or request a turn. |
+| W, A, S, D | Start moving or request a turn. |
 | Escape | Return from the game to the main menu. |
 
-The game view restores keyboard focus when opened. Movement stops at the board edges.
+The game view restores keyboard focus when opened. The player keeps moving until a wall or board edge blocks the current direction. A blocked turn waits until the first opening without changing the player's facing direction or interrupting movement. The latest direction input replaces any pending turn.
 
 ## Board Builder
 
