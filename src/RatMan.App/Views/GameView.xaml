@@ -16,103 +16,130 @@
         <KeyBinding Key="D" Command="{Binding MoveCommand}" CommandParameter="{x:Static game:Direction.Right}" />
         <KeyBinding Key="Escape" Command="{Binding ReturnToMenuCommand}" />
     </UserControl.InputBindings>
-    <Grid Margin="28">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="240" />
+        </Grid.ColumnDefinitions>
 
-        <DockPanel>
-            <Button Padding="16,7"
-                    HorizontalAlignment="Left"
-                    Command="{Binding ReturnToMenuCommand}"
-                    Content="Return to Menu" />
-            <TextBlock Style="{StaticResource ScreenTitleStyle}"
-                       Text="{Binding Title}" />
-        </DockPanel>
+        <Viewbox Grid.Column="0"
+                 Margin="0,0,20,0"
+                 HorizontalAlignment="Left"
+                 Stretch="Uniform">
+            <Border Style="{StaticResource BoardFrameStyle}">
+                <Canvas Width="{Binding BoardWidth}"
+                        Height="{Binding BoardHeight}"
+                        ClipToBounds="True">
+                    <ItemsControl Width="{Binding BoardWidth}"
+                                  Height="{Binding BoardHeight}"
+                                  ItemsSource="{Binding BoardCells}"
+                                  IsHitTestVisible="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                                <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Rectangle Width="{DynamicResource GameCellSize}"
+                                           Height="{DynamicResource GameCellSize}"
+                                           Fill="Transparent"
+                                           Stroke="{DynamicResource GridLineBrush}"
+                                           StrokeThickness="1" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-        <TextBlock Grid.Row="1"
-                   Margin="0,6,0,20"
-                   HorizontalAlignment="Center"
-                   Foreground="{DynamicResource SecondaryTextBrush}"
-                   Text="Move with the arrow keys or W, A, S, D" />
+                    <ItemsControl Width="{Binding BoardWidth}"
+                                  Height="{Binding BoardHeight}"
+                                  ItemsSource="{Binding WallSegments}"
+                                  IsHitTestVisible="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                                <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Rectangle Width="{Binding Width}"
+                                           Height="{Binding Height}"
+                                           Fill="{DynamicResource WallBrush}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-        <Border Grid.Row="2"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Style="{StaticResource BoardFrameStyle}">
-            <Canvas Width="{Binding BoardWidth}"
-                    Height="{Binding BoardHeight}"
-                    ClipToBounds="True">
-                <ItemsControl Width="{Binding BoardWidth}"
-                              Height="{Binding BoardHeight}"
-                              ItemsSource="{Binding BoardCells}"
-                              IsHitTestVisible="False">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <Canvas />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemContainerStyle>
-                        <Style TargetType="ContentPresenter">
-                            <Setter Property="Canvas.Left" Value="{Binding Left}" />
-                            <Setter Property="Canvas.Top" Value="{Binding Top}" />
-                        </Style>
-                    </ItemsControl.ItemContainerStyle>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Rectangle Width="{DynamicResource GameCellSize}"
-                                       Height="{DynamicResource GameCellSize}"
-                                       Fill="Transparent"
-                                       Stroke="{DynamicResource GridLineBrush}"
-                                       StrokeThickness="1" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                    <Image Canvas.Left="{Binding PlayerLeft}"
+                           Canvas.Top="{Binding PlayerTop}"
+                           Panel.ZIndex="10"
+                           Width="{DynamicResource GameCellSize}"
+                           Height="{DynamicResource GameCellSize}"
+                           IsHitTestVisible="False"
+                           RenderOptions.BitmapScalingMode="NearestNeighbor"
+                           SnapsToDevicePixels="True"
+                           Source="{Binding PlayerImage}"
+                           Stretch="Uniform" />
+                </Canvas>
+            </Border>
+        </Viewbox>
 
-                <ItemsControl Width="{Binding BoardWidth}"
-                              Height="{Binding BoardHeight}"
-                              ItemsSource="{Binding WallSegments}"
-                              IsHitTestVisible="False">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <Canvas />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemContainerStyle>
-                        <Style TargetType="ContentPresenter">
-                            <Setter Property="Canvas.Left" Value="{Binding Left}" />
-                            <Setter Property="Canvas.Top" Value="{Binding Top}" />
-                        </Style>
-                    </ItemsControl.ItemContainerStyle>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Rectangle Width="{Binding Width}"
-                                       Height="{Binding Height}"
-                                       Fill="{DynamicResource WallBrush}" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+        <Border Grid.Column="1"
+                Padding="20"
+                Background="{DynamicResource PanelBackgroundBrush}"
+                CornerRadius="8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-                <Image Canvas.Left="{Binding PlayerLeft}"
-                       Canvas.Top="{Binding PlayerTop}"
-                       Panel.ZIndex="10"
-                       Width="{DynamicResource GameCellSize}"
-                       Height="{DynamicResource GameCellSize}"
-                       IsHitTestVisible="False"
-                       RenderOptions.BitmapScalingMode="NearestNeighbor"
-                       SnapsToDevicePixels="True"
-                       Source="{Binding PlayerImage}"
-                       Stretch="Uniform" />
-            </Canvas>
+                <StackPanel Grid.Row="0">
+                    <TextBlock Margin="0,0,0,20"
+                               HorizontalAlignment="Left"
+                               Style="{StaticResource ScreenTitleStyle}"
+                               Text="{Binding Title}" />
+                    <Button Padding="12,9"
+                            Command="{Binding ReturnToMenuCommand}"
+                            Content="Return to Menu" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Margin="0,28,0,0">
+                    <TextBlock Margin="0,0,0,8"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Text="Controls" />
+                    <TextBlock Foreground="{DynamicResource SecondaryTextBrush}"
+                               TextWrapping="Wrap"
+                               Text="Move with the arrow keys or W, A, S, D." />
+                    <TextBlock Margin="0,8,0,0"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               TextWrapping="Wrap"
+                               Text="Press Esc to return to the menu." />
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Margin="0,28,0,0">
+                    <TextBlock Margin="0,0,0,8"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Text="Current position" />
+                    <TextBlock Foreground="{DynamicResource SecondaryTextBrush}"
+                               TextWrapping="Wrap"
+                               Text="{Binding PlayerPosition}" />
+                </StackPanel>
+            </Grid>
         </Border>
-
-        <TextBlock Grid.Row="3"
-                   Margin="0,18,0,0"
-                   HorizontalAlignment="Center"
-                   FontWeight="SemiBold"
-                   Text="{Binding PlayerPosition, StringFormat=Current position: {0}}" />
     </Grid>
 </UserControl>
