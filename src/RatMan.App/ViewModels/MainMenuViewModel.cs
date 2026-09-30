@@ -7,6 +7,7 @@ public sealed class MainMenuViewModel : ScreenViewModel
 {
     public MainMenuViewModel(
         Action startGame,
+        Action showBoardBuilder,
         Action showHighScores,
         Action showSettings,
         Action showAbout,
@@ -14,6 +15,7 @@ public sealed class MainMenuViewModel : ScreenViewModel
         : base("RatMan")
     {
         StartGameCommand = new RelayCommand(_ => startGame());
+        BoardBuilderCommand = new RelayCommand(_ => showBoardBuilder());
         HighScoresCommand = new RelayCommand(_ => showHighScores());
         SettingsCommand = new RelayCommand(_ => showSettings());
         AboutCommand = new RelayCommand(_ => showAbout());
@@ -21,6 +23,8 @@ public sealed class MainMenuViewModel : ScreenViewModel
     }
 
     public ICommand StartGameCommand { get; }
+
+    public ICommand BoardBuilderCommand { get; }
 
     public ICommand HighScoresCommand { get; }
 

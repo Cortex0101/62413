@@ -4,6 +4,25 @@ public sealed class GameSession
 {
     private readonly HashSet<Wall> walls;
 
+    public GameSession(MazeDefinition maze)
+        : this(Validated(maze).Size, maze.PlayerSpawn!.Value, maze.Walls)
+    {
+        Name = maze.Name;
+        MonsterStartingPosition = maze.MonsterSpawn;
+    }
+
+    private static MazeDefinition Validated(MazeDefinition maze)
+    {
+        ArgumentNullException.ThrowIfNull(maze);
+        IReadOnlyList<string> errors = maze.Validate();
+        if (errors.Count > 0) throw new ArgumentException(string.Join(" ", errors), nameof(maze));
+        return maze;
+    }
+
+    public string Name { get; } = "RatMan";
+
+    public GridPosition? MonsterStartingPosition { get; }
+
     public GameSession(
         BoardSize boardSize,
         GridPosition playerStartingPosition,

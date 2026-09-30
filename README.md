@@ -7,14 +7,16 @@ RatMan is a .NET 10 WPF maze-chase course project. The solution separates the de
 The Week 3 milestone includes:
 
 - A main-window shell with view-model-first navigation.
-- Main menu commands for play, high scores, settings, about, and exit.
+- Main menu commands for play, board building, high scores, settings, about, and exit.
 - Placeholder screens for features scheduled in later weeks.
-- A retained-mode Canvas showing a 10-by-14 board and player.
+- A retained-mode Canvas showing the selected maze, player, and static monster spawn marker.
+- A board builder with editable dimensions, boundary walls, and player/monster spawns.
+- Versioned `.maze` files and map selection when multiple saved boards are available.
 - Arrow-key and WASD movement with board-boundary enforcement.
 - Shared WPF colors, brushes, dimensions, typography, and control styles.
 - Automated engine and application view-model tests.
 
-Maze walls, fixed-step updates, collectibles, scoring, cats, gameplay states, and persistence are intentionally scheduled for later milestones.
+Collectibles, scoring, moving cats, and additional gameplay states are scheduled for later milestones. Monster markers currently indicate starting positions only.
 
 ## Prerequisites
 
@@ -62,6 +64,49 @@ dotnet run --project .\src\RatMan.App\RatMan.App.csproj
 | Escape | Return from the game to the main menu. |
 
 The game view restores keyboard focus when opened. Movement stops at the board edges.
+
+## Board Builder
+
+Open **Board Builder** from the main menu. The board is on the left; naming, dimensions, tools, and file actions are on the right. New boards start at 12 columns by 11 rows. Width and height accept whole numbers from 1 through 100; commit a change with Enter or by leaving the field. Shrinking asks for confirmation if walls or spawn points would be removed.
+
+| Input | Builder action |
+| --- | --- |
+| 1 / 2 / 3 (including numpad) | Select wall / player spawn / monster spawn. |
+| R | Rotate the wall tool between horizontal and vertical. |
+| Left-click | Place a wall near an internal cell boundary, or a spawn inside a cell. |
+| Right-click | Remove a nearby wall or the spawn in a cell. |
+| Escape | Return to the menu, checking unsaved changes. |
+
+Selecting a spawn and clicking another cell moves its marker. The preview follows the pointer. Keyboard shortcuts do not interfere with typing in the name or dimension fields. Outer boundaries are fixed. Saving requires a name and exactly one **P** (player) and **M** (monster) on different cells; disconnected areas are allowed.
+
+**Save** keeps the editor open. **Load Board** lists existing boards for editing. **New Board**, loading another board, and returning to the menu offer Save/Discard/Cancel when changes are pending. Changing a loaded board's display name updates the same file; use New Board to create a separate map.
+
+## Saved maps
+
+Maps live in `%LOCALAPPDATA%\RatMan\Mazes`, shared across builds. On first use, the app copies the bundled `Classic.maze` there without overwriting an existing file. The `.initialized` marker prevents later launches from restoring a deliberately deleted Classic map. New files use sanitized board names and ask before replacing an existing file. Saves replace files atomically.
+
+**Start Game** starts a fresh session directly when there is one valid map, shows a clickable list when there are multiple, and offers the builder when none are valid. Invalid files are reported without preventing valid boards from being played. Copy compatible `.maze` files into this folder to add them to the library; the catalog refreshes whenever opening Start Game or Load Board.
+
+### File format
+
+`.maze` files contain UTF-8 JSON, version 1. Width counts columns and height counts rows. Coordinates are zero-based. Each wall separates two orthogonally adjacent cells; coordinates describe cells, not grid intersections. Both spawn fields are required. For example, this valid map intentionally has no route between its two cells:
+
+```json
+{
+  "version": 1,
+  "name": "Two rooms",
+  "width": 2,
+  "height": 1,
+  "playerSpawn": { "row": 0, "column": 0 },
+  "monsterSpawn": { "row": 0, "column": 1 },
+  "walls": [
+    {
+      "firstTile": { "row": 0, "column": 0 },
+      "secondTile": { "row": 0, "column": 1 }
+    }
+  ]
+}
+```
 
 ## Documentation
 

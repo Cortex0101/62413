@@ -1,0 +1,346 @@
+{
+  "version": 1,
+  "name": "Classic",
+  "width": 12,
+  "height": 11,
+  "playerSpawn": {
+    "row": 8,
+    "column": 4
+  },
+  "monsterSpawn": {
+    "row": 5,
+    "column": 5
+  },
+  "walls": [
+    {
+      "firstTile": {
+        "row": 0,
+        "column": 1
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 1
+      }
+    },
+    {
+      "firstTile": {
+        "row": 0,
+        "column": 10
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 10
+      }
+    },
+    {
+      "firstTile": {
+        "row": 0,
+        "column": 3
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 3
+      }
+    },
+    {
+      "firstTile": {
+        "row": 0,
+        "column": 4
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 4
+      }
+    },
+    {
+      "firstTile": {
+        "row": 0,
+        "column": 5
+      },
+      "secondTile": {
+        "row": 0,
+        "column": 6
+      }
+    },
+    {
+      "firstTile": {
+        "row": 0,
+        "column": 7
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 7
+      }
+    },
+    {
+      "firstTile": {
+        "row": 0,
+        "column": 8
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 8
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 0
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 1
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 1
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 2
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 1
+      },
+      "secondTile": {
+        "row": 2,
+        "column": 1
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 10
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 11
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 10
+      },
+      "secondTile": {
+        "row": 2,
+        "column": 10
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 2
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 3
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 3
+      },
+      "secondTile": {
+        "row": 2,
+        "column": 3
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 4
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 5
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 4
+      },
+      "secondTile": {
+        "row": 2,
+        "column": 4
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 5
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 6
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 6
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 7
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 7
+      },
+      "secondTile": {
+        "row": 2,
+        "column": 7
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 8
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 9
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 8
+      },
+      "secondTile": {
+        "row": 2,
+        "column": 8
+      }
+    },
+    {
+      "firstTile": {
+        "row": 1,
+        "column": 9
+      },
+      "secondTile": {
+        "row": 1,
+        "column": 10
+      }
+    },
+    {
+      "firstTile": {
+        "row": 2,
+        "column": 1
+      },
+      "secondTile": {
+        "row": 3,
+        "column": 1
+      }
+    },
+    {
+      "firstTile": {
+        "row": 2,
+        "column": 10
+      },
+      "secondTile": {
+        "row": 3,
+        "column": 10
+      }
+    },
+    {
+      "firstTile": {
+        "row": 2,
+        "column": 5
+      },
+      "secondTile": {
+        "row": 3,
+        "column": 5
+      }
+    },
+    {
+      "firstTile": {
+        "row": 2,
+        "column": 6
+      },
+      "secondTile": {
+        "row": 3,
+        "column": 6
+      }
+    },
+    {
+      "firstTile": {
+        "row": 3,
+        "column": 2
+      },
+      "secondTile": {
+        "row": 3,
+        "column": 3
+      }
+    },
+    {
+      "firstTile": {
+        "row": 3,
+        "column": 3
+      },
+      "secondTile": {
+        "row": 4,
+        "column": 3
+      }
+    },
+    {
+      "firstTile": {
+        "row": 3,
+        "column": 5
+      },
+      "secondTile": {
+        "row": 3,
+        "column": 6
+      }
+    },
+    {
+      "firstTile": {
+        "row": 3,
+        "column": 8
+      },
+      "secondTile": {
+        "row": 3,
+        "column": 9
+      }
+    },
+    {
+      "firstTile": {
+        "row": 3,
+        "column": 8
+      },
+      "secondTile": {
+        "row": 4,
+        "column": 8
+      }
+    },
+    {
+      "firstTile": {
+        "row": 4,
+        "column": 2
+      },
+      "secondTile": {
+        "row": 4,
+        "column": 3
+      }
+    },
+    {
+      "firstTile": {
+        "row": 4,
+        "column": 8
+      },
+      "secondTile": {
+        "row": 4,
+        "column": 9
+      }
+    }
+  ]
+}

@@ -10,7 +10,7 @@ public sealed class AppViewModelTests
     [TestMethod]
     public void Constructor_StartsAtMainMenu()
     {
-        MainViewModel viewModel = new();
+        MainViewModel viewModel = new(repository: new MemoryMazeRepository(TestMazes.Sample));
 
         Assert.IsInstanceOfType(viewModel.ActiveScreen, typeof(MainMenuViewModel));
     }
@@ -18,7 +18,7 @@ public sealed class AppViewModelTests
     [TestMethod]
     public void MenuCommands_NavigateToPlaceholdersAndBack()
     {
-        MainViewModel viewModel = new();
+        MainViewModel viewModel = new(repository: new MemoryMazeRepository(TestMazes.Sample));
         MainMenuViewModel menu = (MainMenuViewModel)viewModel.ActiveScreen;
 
         menu.HighScoresCommand.Execute(null);
@@ -34,7 +34,7 @@ public sealed class AppViewModelTests
     [TestMethod]
     public void StartGame_NavigatesToProjectedBoard()
     {
-        MainViewModel viewModel = new();
+        MainViewModel viewModel = new(repository: new MemoryMazeRepository(TestMazes.Sample));
         MainMenuViewModel menu = (MainMenuViewModel)viewModel.ActiveScreen;
 
         menu.StartGameCommand.Execute(null);
@@ -49,9 +49,9 @@ public sealed class AppViewModelTests
     [TestMethod]
     public void Constructor_ProjectsThinWallsBetweenCells()
     {
-        GameViewModel game = new(() => { });
+        GameViewModel game = new(() => { }, new GameSession(TestMazes.Sample));
 
-        Assert.AreEqual(ClassicMaze.CreateSession().Walls.Count, game.WallSegments.Count);
+        Assert.AreEqual(TestMazes.Sample.Walls.Count, game.WallSegments.Count);
         CollectionAssert.Contains(
             game.WallSegments.ToArray(),
             new WallSegmentViewModel(178d, -2d, 4d, 40d));
@@ -63,7 +63,7 @@ public sealed class AppViewModelTests
     [TestMethod]
     public void MoveCommand_WhenMoveSucceeds_RaisesProjectionChanges()
     {
-        GameViewModel game = new(() => { });
+        GameViewModel game = new(() => { }, new GameSession(TestMazes.Sample));
         HashSet<string?> changedProperties = [];
         game.PropertyChanged += (_, args) => changedProperties.Add(args.PropertyName);
 
@@ -80,7 +80,7 @@ public sealed class AppViewModelTests
     [TestMethod]
     public void MoveCommand_WhenMoveIsBlocked_PlaysReactionWithoutChangingPosition()
     {
-        GameViewModel game = new(() => { });
+        GameViewModel game = new(() => { }, new GameSession(TestMazes.Sample));
         game.MoveCommand.Execute(Direction.Up);
 
         Assert.AreEqual("Row 9, Column 5", game.PlayerPosition);
@@ -96,7 +96,7 @@ public sealed class AppViewModelTests
     [TestMethod]
     public void MoveCommand_WhileMoving_ContinuesInLatestDirectionUntilBlocked()
     {
-        GameViewModel game = new(() => { });
+        GameViewModel game = new(() => { }, new GameSession(TestMazes.Sample));
 
         game.MoveCommand.Execute(Direction.Right);
         game.MoveCommand.Execute(Direction.Down);

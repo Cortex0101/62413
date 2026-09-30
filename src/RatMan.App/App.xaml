@@ -15,6 +15,12 @@
         <DataTemplate DataType="{x:Type viewModels:GameViewModel}">
             <views:GameView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:BoardBuilderViewModel}">
+            <views:BoardBuilderView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:MapSelectionViewModel}">
+            <views:MapSelectionView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type viewModels:PlaceholderViewModel}">
             <views:PlaceholderView />
         </DataTemplate>

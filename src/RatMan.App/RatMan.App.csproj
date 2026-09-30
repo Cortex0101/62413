@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+	<EmbeddedResource Include="Resources\Classic.maze" LogicalName="RatMan.App.Classic.maze" />
 	<ProjectReference Include="..\RatMan.Game\RatMan.Game.csproj" />
   </ItemGroup>
 

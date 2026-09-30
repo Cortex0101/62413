@@ -9,29 +9,35 @@ namespace RatMan.App.ViewModels;
 
 public sealed class GameViewModel : ScreenViewModel
 {
-    public const double CellSize = 36;
-    public const double WallThickness = 4;
+    public const double CellSize = BoardProjection.CellSize;
+    public const double WallThickness = BoardProjection.WallThickness;
 
     private readonly GameSession gameSession;
 
-    public GameViewModel(Action returnToMenu)
-        : base("RatMan")
+    public GameViewModel(Action returnToMenu, GameSession session)
+        : base(session.Name)
     {
-        gameSession = ClassicMaze.CreateSession();
+        gameSession = session;
         Player = new PlayerPresentationViewModel(
             gameSession.Player.Position,
             CellSize,
             RatManSpriteSheet.CreateAnimator());
         Player.PropertyChanged += OnPlayerPropertyChanged;
-        BoardCells = CreateBoardCells(gameSession.BoardSize);
-        WallSegments = CreateWallSegments(gameSession.Walls);
+        BoardCells = BoardProjection.Cells(gameSession.BoardSize);
+        WallSegments = BoardProjection.Segments(gameSession.Walls);
         MoveCommand = new RelayCommand(Move);
         ReturnToMenuCommand = new RelayCommand(_ => returnToMenu());
     }
 
     public IReadOnlyList<BoardCellViewModel> BoardCells { get; }
 
+    public string MapWarnings { get; init; } = "";
+
     public IReadOnlyList<WallSegmentViewModel> WallSegments { get; }
+
+    public bool HasMonsterSpawn => gameSession.MonsterStartingPosition.HasValue;
+    public double MonsterLeft => (gameSession.MonsterStartingPosition?.Column ?? 0) * CellSize;
+    public double MonsterTop => (gameSession.MonsterStartingPosition?.Row ?? 0) * CellSize;
 
     public PlayerPresentationViewModel Player { get; }
 
@@ -72,38 +78,6 @@ public sealed class GameViewModel : ScreenViewModel
             Player.SetIdle();
             TryStartMove(direction);
         }
-    }
-
-    private static IReadOnlyList<BoardCellViewModel> CreateBoardCells(BoardSize boardSize)
-    {
-        List<BoardCellViewModel> cells = new(boardSize.Rows * boardSize.Columns);
-
-        for (int row = 0; row < boardSize.Rows; row++)
-        {
-            for (int column = 0; column < boardSize.Columns; column++)
-            {
-                cells.Add(new BoardCellViewModel(column * CellSize, row * CellSize));
-            }
-        }
-
-        return cells;
-    }
-
-    private static IReadOnlyList<WallSegmentViewModel> CreateWallSegments(IEnumerable<Wall> walls)
-    {
-        double offset = WallThickness / 2;
-        return walls.Select(wall => wall.FirstTile.Row == wall.SecondTile.Row
-            ? new WallSegmentViewModel(
-                wall.SecondTile.Column * CellSize - offset,
-                wall.FirstTile.Row * CellSize - offset,
-                WallThickness,
-                CellSize + WallThickness)
-            : new WallSegmentViewModel(
-                wall.FirstTile.Column * CellSize - offset,
-                wall.SecondTile.Row * CellSize - offset,
-                CellSize + WallThickness,
-                WallThickness))
-            .ToArray();
     }
 
     private void Move(object? parameter)

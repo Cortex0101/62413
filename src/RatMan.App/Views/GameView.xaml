@@ -80,6 +80,12 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
+                    <Border Canvas.Left="{Binding MonsterLeft}" Canvas.Top="{Binding MonsterTop}"
+                            Width="36" Height="36" CornerRadius="18" Background="#BE5B77"
+                            BorderBrush="{DynamicResource PrimaryTextBrush}" BorderThickness="2" IsHitTestVisible="False"
+                            Visibility="{Binding HasMonsterSpawn, Converter={StaticResource BoolVisibility}}">
+                        <TextBlock Text="M" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
                     <Image Canvas.Left="{Binding PlayerLeft}"
                            Canvas.Top="{Binding PlayerTop}"
                            Panel.ZIndex="10"
@@ -98,6 +104,7 @@
                 Padding="20"
                 Background="{DynamicResource PanelBackgroundBrush}"
                 CornerRadius="8">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -110,6 +117,7 @@
                     <TextBlock Margin="0,0,0,20"
                                HorizontalAlignment="Left"
                                Style="{StaticResource ScreenTitleStyle}"
+                               FontSize="26" TextWrapping="Wrap"
                                Text="{Binding Title}" />
                     <Button Padding="12,9"
                             Command="{Binding ReturnToMenuCommand}"
@@ -131,6 +139,7 @@
                 </StackPanel>
 
                 <StackPanel Grid.Row="2" Margin="0,28,0,0">
+                    <TextBlock Text="{Binding MapWarnings}" TextWrapping="Wrap" Margin="0,0,0,8" />
                     <TextBlock Margin="0,0,0,8"
                                FontSize="18"
                                FontWeight="SemiBold"
@@ -140,6 +149,7 @@
                                Text="{Binding PlayerPosition}" />
                 </StackPanel>
             </Grid>
+            </ScrollViewer>
         </Border>
     </Grid>
 </UserControl>

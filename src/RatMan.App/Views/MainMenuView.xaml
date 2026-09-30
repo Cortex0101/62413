@@ -13,6 +13,7 @@
                        Foreground="{DynamicResource SecondaryTextBrush}"
                        Text="A mouse-and-cats maze chase" />
             <Button Margin="0,4" Command="{Binding StartGameCommand}" Content="Start Game" />
+            <Button Margin="0,4" Command="{Binding BoardBuilderCommand}" Content="Board Builder" />
             <Button Margin="0,4" Command="{Binding HighScoresCommand}" Content="High Scores" />
             <Button Margin="0,4" Command="{Binding SettingsCommand}" Content="Settings" />
             <Button Margin="0,4" Command="{Binding AboutCommand}" Content="About" />

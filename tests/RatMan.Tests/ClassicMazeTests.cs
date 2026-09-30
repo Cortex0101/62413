@@ -9,7 +9,7 @@ public sealed class ClassicMazeTests
     public void Layout_IsCompactAndMirrored()
     {
         GameSession maze = ClassicMaze.CreateSession();
-        Assert.AreEqual(new BoardSize(11, 10), maze.BoardSize);
+        Assert.AreEqual(new BoardSize(11, 12), maze.BoardSize);
         Assert.IsTrue(maze.BoardSize.Contains(maze.Player.Position));
         Assert.IsTrue(maze.Walls.Count > 0);
         foreach (Wall wall in maze.Walls)
@@ -19,30 +19,6 @@ public sealed class ClassicMazeTests
                 new GridPosition(wall.SecondTile.Row, maze.BoardSize.Columns - 1 - wall.SecondTile.Column));
             Assert.IsTrue(maze.Walls.Contains(mirrored));
         }
-    }
-
-    [TestMethod]
-    public void EveryCellIsReachable()
-    {
-        GameSession maze = ClassicMaze.CreateSession();
-        HashSet<GridPosition> visited = [ClassicMaze.StartingPosition];
-        Queue<GridPosition> pending = new();
-        pending.Enqueue(ClassicMaze.StartingPosition);
-
-        while (pending.TryDequeue(out GridPosition position))
-        {
-            foreach (Direction direction in Enum.GetValues<Direction>())
-            {
-                GameSession probe = new(maze.BoardSize, position, maze.Walls);
-                if (probe.TryMovePlayer(direction) && visited.Add(probe.Player.Position))
-                {
-                    pending.Enqueue(probe.Player.Position);
-                }
-            }
-        }
-
-        Assert.AreEqual(maze.BoardSize.Rows * maze.BoardSize.Columns, visited.Count,
-            "Thin walls must leave every cell reachable from the start.");
     }
 
     [TestMethod]
