@@ -40,24 +40,24 @@ public sealed class AppViewModelTests
         menu.StartGameCommand.Execute(null);
         GameViewModel game = (GameViewModel)viewModel.ActiveScreen;
 
-        Assert.AreEqual(128, game.BoardCells.Count);
-        Assert.AreEqual(288d, game.BoardWidth);
-        Assert.AreEqual(576d, game.BoardHeight);
-        Assert.AreEqual("Row 2, Column 2", game.PlayerPosition);
+        Assert.AreEqual(110, game.BoardCells.Count);
+        Assert.AreEqual(360d, game.BoardWidth);
+        Assert.AreEqual(396d, game.BoardHeight);
+        Assert.AreEqual("Row 9, Column 5", game.PlayerPosition);
     }
 
     [TestMethod]
-    public void Constructor_ProjectsWallsOntoTileBoundaries()
+    public void Constructor_ProjectsThinWallsBetweenCells()
     {
         GameViewModel game = new(() => { });
 
-        Assert.AreEqual(7, game.WallSegments.Count);
+        Assert.AreEqual(ClassicMaze.CreateSession().Walls.Count, game.WallSegments.Count);
         CollectionAssert.Contains(
             game.WallSegments.ToArray(),
-            new WallSegmentViewModel(108d, 34d, 36d, 4d));
+            new WallSegmentViewModel(178d, -2d, 4d, 40d));
         CollectionAssert.Contains(
             game.WallSegments.ToArray(),
-            new WallSegmentViewModel(214d, 36d, 4d, 36d));
+            new WallSegmentViewModel(34d, 70d, 40d, 4d));
     }
 
     [TestMethod]
@@ -70,8 +70,8 @@ public sealed class AppViewModelTests
         game.MoveCommand.Execute(Direction.Right);
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
 
-        Assert.AreEqual("Row 2, Column 3", game.PlayerPosition);
-        Assert.AreEqual(54d, game.PlayerLeft);
+        Assert.AreEqual("Row 9, Column 6", game.PlayerPosition);
+        Assert.AreEqual(162d, game.PlayerLeft);
         CollectionAssert.IsSubsetOf(
             new[] { nameof(game.PlayerLeft), nameof(game.PlayerPosition) },
             changedProperties.ToArray());
@@ -82,16 +82,15 @@ public sealed class AppViewModelTests
     {
         GameViewModel game = new(() => { });
         game.MoveCommand.Execute(Direction.Up);
-        game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
 
-        Assert.AreEqual("Row 1, Column 2", game.PlayerPosition);
+        Assert.AreEqual("Row 9, Column 5", game.PlayerPosition);
         Assert.AreEqual(PlayerAnimationState.Blocked, game.Player.AnimationState);
         Assert.AreEqual(Direction.Up, game.Player.FacingDirection);
 
         game.Advance(TimeSpan.FromMilliseconds(210));
 
         Assert.AreEqual(PlayerAnimationState.Idle, game.Player.AnimationState);
-        Assert.AreEqual(0d, game.PlayerTop);
+        Assert.AreEqual(288d, game.PlayerTop);
     }
 
     [TestMethod]
@@ -104,17 +103,20 @@ public sealed class AppViewModelTests
         game.MoveCommand.Execute(Direction.Left);
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
 
-        Assert.AreEqual("Row 2, Column 2", game.PlayerPosition);
+        Assert.AreEqual("Row 9, Column 5", game.PlayerPosition);
         Assert.AreEqual(PlayerAnimationState.Walking, game.Player.AnimationState);
         Assert.AreEqual(Direction.Left, game.Player.FacingDirection);
 
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
 
-        Assert.AreEqual(36d, game.PlayerLeft);
+        Assert.AreEqual(144d, game.PlayerLeft);
         Assert.AreEqual(PlayerAnimationState.Walking, game.Player.AnimationState);
         Assert.AreEqual(Direction.Left, game.Player.FacingDirection);
 
-        game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
+        for (int step = 0; step < 4; step++)
+        {
+            game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
+        }
 
         Assert.AreEqual(0d, game.PlayerLeft);
         Assert.AreEqual(PlayerAnimationState.Blocked, game.Player.AnimationState);

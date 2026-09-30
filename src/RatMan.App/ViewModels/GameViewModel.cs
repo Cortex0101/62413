@@ -17,14 +17,13 @@ public sealed class GameViewModel : ScreenViewModel
     public GameViewModel(Action returnToMenu)
         : base("RatMan")
     {
-        BoardSize boardSize = new(16, 8);
-        gameSession = new GameSession(boardSize, new GridPosition(1, 1), CreateWalls());
+        gameSession = ClassicMaze.CreateSession();
         Player = new PlayerPresentationViewModel(
             gameSession.Player.Position,
             CellSize,
             RatManSpriteSheet.CreateAnimator());
         Player.PropertyChanged += OnPlayerPropertyChanged;
-        BoardCells = CreateBoardCells(boardSize);
+        BoardCells = CreateBoardCells(gameSession.BoardSize);
         WallSegments = CreateWallSegments(gameSession.Walls);
         MoveCommand = new RelayCommand(Move);
         ReturnToMenuCommand = new RelayCommand(_ => returnToMenu());
@@ -90,31 +89,19 @@ public sealed class GameViewModel : ScreenViewModel
         return cells;
     }
 
-    private static IReadOnlyList<Wall> CreateWalls() =>
-    [
-        new(new GridPosition(0, 3), new GridPosition(1, 3)),
-        new(new GridPosition(1, 5), new GridPosition(1, 6)),
-        new(new GridPosition(3, 1), new GridPosition(3, 2)),
-        new(new GridPosition(3, 2), new GridPosition(4, 2)),
-        new(new GridPosition(5, 4), new GridPosition(5, 5)),
-        new(new GridPosition(5, 5), new GridPosition(6, 5)),
-        new(new GridPosition(6, 6), new GridPosition(6, 7))
-    ];
-
     private static IReadOnlyList<WallSegmentViewModel> CreateWallSegments(IEnumerable<Wall> walls)
     {
         double offset = WallThickness / 2;
-
         return walls.Select(wall => wall.FirstTile.Row == wall.SecondTile.Row
             ? new WallSegmentViewModel(
                 wall.SecondTile.Column * CellSize - offset,
-                wall.FirstTile.Row * CellSize,
+                wall.FirstTile.Row * CellSize - offset,
                 WallThickness,
-                CellSize)
+                CellSize + WallThickness)
             : new WallSegmentViewModel(
-                wall.FirstTile.Column * CellSize,
+                wall.FirstTile.Column * CellSize - offset,
                 wall.SecondTile.Row * CellSize - offset,
-                CellSize,
+                CellSize + WallThickness,
                 WallThickness))
             .ToArray();
     }
