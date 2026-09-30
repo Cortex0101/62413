@@ -8,7 +8,7 @@ namespace RatMan.App.ViewModels;
 
 public sealed class PlayerPresentationViewModel : ObservableObject
 {
-    public static readonly TimeSpan DefaultMoveDuration = TimeSpan.FromMilliseconds(190);
+    public static readonly TimeSpan DefaultMoveDuration = TimeSpan.FromMilliseconds(350);
 
     private readonly SpriteAnimator animator;
     private readonly double cellSize;
