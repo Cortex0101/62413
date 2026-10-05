@@ -4,6 +4,9 @@ public sealed class GameSession
 {
     private readonly HashSet<Wall> walls;
     private readonly BoardTopology topology;
+    private readonly Dictionary<GridPosition, FoodKind> remainingFood;
+    public IReadOnlyDictionary<GridPosition, FoodKind> RemainingFood { get; }
+    public int Score { get; private set; }
     public IReadOnlyCollection<int> OpenBorderRows { get; } = [];
     public IReadOnlyCollection<int> OpenBorderColumns { get; } = [];
 
@@ -15,6 +18,8 @@ public sealed class GameSession
         OpenBorderRows = maze.OpenBorderRows.ToArray();
         OpenBorderColumns = maze.OpenBorderColumns.ToArray();
         topology = new(BoardSize, walls, OpenBorderRows, OpenBorderColumns);
+        remainingFood.Clear();
+        foreach (var item in FoodLayout.Create(maze)) remainingFood.Add(item.Key, item.Value);
     }
 
     private static MazeDefinition Validated(MazeDefinition maze)
@@ -60,6 +65,8 @@ public sealed class GameSession
         BoardSize = boardSize;
         Player = new Player(playerStartingPosition);
         topology = new(BoardSize, this.walls, [], []);
+        remainingFood = FoodLayout.Create(new("", boardSize, this.walls, playerStartingPosition, null));
+        RemainingFood = new System.Collections.ObjectModel.ReadOnlyDictionary<GridPosition, FoodKind>(remainingFood);
     }
 
     public BoardSize BoardSize { get; }
@@ -67,6 +74,17 @@ public sealed class GameSession
     public Player Player { get; }
 
     public IReadOnlySet<Wall> Walls => walls;
+
+    // Called at tile arrival; repeat calls on an empty tile cannot award points.
+    public FoodCollection? CollectFoodAtPlayer()
+    {
+        if (!remainingFood.TryGetValue(Player.Position, out FoodKind kind)) return null;
+        int points = FoodPoints.For(kind);
+        int nextScore = checked(Score + points);
+        remainingFood.Remove(Player.Position);
+        Score = nextScore;
+        return new(Player.Position, kind, points);
+    }
 
     public bool TryMovePlayer(Direction direction)
     {

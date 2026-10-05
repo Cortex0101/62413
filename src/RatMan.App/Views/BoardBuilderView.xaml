@@ -2,7 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:RatMan.App.ViewModels"
-             Focusable="True" Loaded="OnLoaded" PreviewKeyDown="OnKeyDown">
+             Focusable="True" Loaded="OnLoaded" Unloaded="OnUnloaded" PreviewKeyDown="OnKeyDown">
     <UserControl.Resources>
         <ItemsPanelTemplate x:Key="CanvasPanel"><Canvas /></ItemsPanelTemplate>
         <Style x:Key="PositionedItem" TargetType="ContentPresenter">
@@ -48,6 +48,7 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <ItemsControl ItemsSource="{Binding Food.Items}" Style="{StaticResource FoodLayerStyle}" />
                     <ItemsControl ItemsSource="{Binding RenderedWalls}" IsHitTestVisible="False"
                                   ItemsPanel="{StaticResource CanvasPanel}" ItemContainerStyle="{StaticResource PositionedItem}"
                                   ItemTemplate="{StaticResource WallTemplate}" />
@@ -57,14 +58,18 @@
                         <TextBlock Text="P" Foreground="#161821" FontWeight="Bold" FontSize="22"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
-                    <Border Style="{StaticResource SpawnMarker}" Background="#BE5B77"
+                    <Border Style="{StaticResource SpawnMarker}" Background="Transparent" BorderBrush="#BE5B77" BorderThickness="1"
                             Canvas.Left="{Binding MonsterLeft}" Canvas.Top="{Binding MonsterTop}"
                             Visibility="{Binding HasMonsterSpawn, Converter={StaticResource BoolVisibility}}">
-                        <TextBlock Text="M" FontWeight="Bold" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <TextBlock Text="M" Foreground="#EE90AB" FontWeight="Bold" FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Top" />
                     </Border>
                     <ItemsControl ItemsSource="{Binding PreviewSegments}" IsHitTestVisible="False" Opacity="0.5"
                                   ItemsPanel="{StaticResource CanvasPanel}" ItemContainerStyle="{StaticResource PositionedItem}"
                                   ItemTemplate="{StaticResource WallTemplate}" />
+                    <Image Canvas.Left="{Binding PreviewLeft}" Canvas.Top="{Binding PreviewTop}"
+                           Width="36" Height="36" Stretch="Uniform" Opacity="0.65" IsHitTestVisible="False"
+                           RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{Binding PreviewFoodImage}"
+                           Visibility="{Binding HasFoodPreview, Converter={StaticResource BoolVisibility}}" />
                     <Border Style="{StaticResource SpawnMarker}" Background="{DynamicResource AccentBrush}" Opacity="0.5"
                             Canvas.Left="{Binding PreviewLeft}" Canvas.Top="{Binding PreviewTop}"
                             Visibility="{Binding HasPreviewCell, Converter={StaticResource BoolVisibility}}">
@@ -95,9 +100,11 @@
                     <Button Content="1 · Wall" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:BuilderTool.Wall}" Margin="0,3" />
                     <Button Content="2 · Player spawn" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:BuilderTool.Player}" Margin="0,3" />
                     <Button Content="3 · Monster spawn" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:BuilderTool.Monster}" Margin="0,3" />
+                    <Button Content="4 · Normal cheese" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:BuilderTool.NormalCheese}" Margin="0,3" />
+                    <Button Content="5 · Steroid cheese" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:BuilderTool.SteroidCheese}" Margin="0,3" />
                     <Button Content="Rotate wall (R)" Command="{Binding RotateCommand}" Margin="0,3" />
                     <TextBlock Text="{Binding ToolDescription}" TextWrapping="Wrap" Margin="0,10" Foreground="{DynamicResource AccentBrush}" />
-                    <TextBlock Text="Left-click to place. Right-click to remove. Border openings are paired and wrap to the opposite side. Unreachable cells fill after placing P. P = player, M = monster. Dimensions: 1–100."
+                    <TextBlock Text="Left-click to place. Right-click with a cheese tool clears food only. Normal cheese restores food. Border openings wrap to the opposite side. Unreachable cells and the player start have no food. P = player, M = monster. Dimensions: 1–100."
                                TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,14" />
                     <Button Content="Save" Command="{Binding SaveCommand}" Margin="0,3" />
                     <Button Content="Load Board" Command="{Binding LoadBoardCommand}" Margin="0,3" />

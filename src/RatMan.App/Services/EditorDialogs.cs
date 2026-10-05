@@ -14,7 +14,7 @@ public interface IEditorDialogs
 public sealed class EditorDialogs : IEditorDialogs
 {
     public bool ConfirmCrop() => MessageBox.Show(
-        "Reducing the board will remove walls or spawn points outside its new size. Continue?",
+        "Reducing the board will remove walls, spawn points, or food overrides outside its new size. Continue?",
         "Resize board", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
 
     public bool ConfirmOverwrite(string path) => MessageBox.Show(

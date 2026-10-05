@@ -9,6 +9,9 @@ public sealed record MazeDefinition(
 {
     public const int MaximumDimension = 100;
 
+    public IReadOnlyCollection<GridPosition> EmptyFoodTiles { get; init; } = [];
+    public IReadOnlyCollection<GridPosition> SteroidCheeseTiles { get; init; } = [];
+
     // Each index opens both opposing borders, so an unpaired opening is impossible.
     public IReadOnlyCollection<int> OpenBorderRows { get; init; } = [];
     public IReadOnlyCollection<int> OpenBorderColumns { get; init; } = [];
@@ -16,6 +19,10 @@ public sealed record MazeDefinition(
     public IReadOnlyList<string> Validate()
     {
         List<string> errors = [];
+        if (EmptyFoodTiles.Concat(SteroidCheeseTiles).Any(position => !Size.Contains(position)))
+            errors.Add("Food coordinates must be inside the board.");
+        if (EmptyFoodTiles.Intersect(SteroidCheeseTiles).Any())
+            errors.Add("A tile cannot be both empty and contain steroid cheese.");
         if (OpenBorderRows.Any(row => row < 0 || row >= Size.Rows) ||
             OpenBorderColumns.Any(column => column < 0 || column >= Size.Columns))
             errors.Add("Border openings must be inside the board dimensions.");

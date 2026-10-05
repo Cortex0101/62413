@@ -1,4 +1,6 @@
 using System.Windows.Input;
+using System.Windows.Media;
+using RatMan.App.Animation;
 using RatMan.App.Mvvm;
 using RatMan.App.Persistence;
 using RatMan.App.Services;
@@ -6,7 +8,7 @@ using RatMan.Game;
 
 namespace RatMan.App.ViewModels;
 
-public enum BuilderTool { Wall, Player, Monster }
+public enum BuilderTool { Wall, Player, Monster, NormalCheese, SteroidCheese }
 
 public sealed class BoardBuilderViewModel : ScreenViewModel
 {
@@ -14,6 +16,7 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
     private readonly IEditorDialogs dialogs;
     private readonly HashSet<Wall> walls = [];
     private readonly HashSet<int> openRows = [], openColumns = [];
+    private readonly HashSet<GridPosition> emptyFoodTiles = [], steroidCheeseTiles = [];
     private BoardSize size = new(11, 12);
     private string name = "", widthInput = "12", heightInput = "11", status = "";
     private GridPosition? playerSpawn, monsterSpawn;
@@ -36,6 +39,12 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
         ReturnToMenuCommand = new RelayCommand(_ => { if (CanLeave()) returnToMenu(); });
         SelectToolCommand = new RelayCommand(value => { if (value is BuilderTool selected) SelectedTool = selected; });
         RotateCommand = new RelayCommand(_ => Rotate());
+        RefreshBoard();
+        Food.Animator.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(Food.Animator.CurrentImage) && SelectedTool == BuilderTool.SteroidCheese)
+                OnPropertyChanged(nameof(PreviewFoodImage));
+        };
     }
 
     public ICommand SaveCommand { get; }
@@ -57,11 +66,16 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
         set { if (SetProperty(ref tool, value)) { ClearPreview(); OnPropertyChanged(nameof(ToolDescription)); } }
     }
     public bool IsVertical => vertical;
+    public FoodPresentationViewModel Food { get; } = new();
+    public bool IsFoodTool => SelectedTool is BuilderTool.NormalCheese or BuilderTool.SteroidCheese;
+    public void Advance(TimeSpan elapsed) => Food.Advance(elapsed);
     public string ToolDescription => SelectedTool switch
     {
         BuilderTool.Wall => $"Selected: {(vertical ? "vertical" : "horizontal")} wall · R rotates",
         BuilderTool.Player => "Selected: player spawn",
-        _ => "Selected: monster spawn"
+        BuilderTool.Monster => "Selected: monster spawn",
+        BuilderTool.NormalCheese => "Normal cheese · 1 point · Right-click clears food",
+        _ => "Steroid cheese · 5 points · Right-click clears food"
     };
     public IReadOnlyList<BoardCellViewModel> BoardCells => boardCells ??= BoardProjection.Cells(size);
     public IReadOnlyList<WallSegmentViewModel> WallSegments => BoardProjection.Segments(walls);
@@ -77,13 +91,19 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
     public double MonsterLeft => (monsterSpawn?.Column ?? 0) * BoardProjection.CellSize;
     public double MonsterTop => (monsterSpawn?.Row ?? 0) * BoardProjection.CellSize;
     public IReadOnlyList<WallSegmentViewModel> PreviewSegments => previewWall is { } wall ? [BoardProjection.Segment(wall)] : [];
-    public bool HasPreviewCell => previewCell.HasValue;
+    public bool HasPreviewCell => previewCell.HasValue && !IsFoodTool;
+    public bool HasFoodPreview => previewCell is { } cell && IsFoodTool && CanPlaceFood(cell);
+    public ImageSource? PreviewFoodImage => !HasFoodPreview ? null : SelectedTool == BuilderTool.SteroidCheese
+        ? Food.Animator.CurrentImage : CheeseSpriteSheet.NormalImage(Food.VariantAt(previewCell!.Value));
     public double PreviewLeft => (previewCell?.Column ?? 0) * BoardProjection.CellSize;
     public double PreviewTop => (previewCell?.Row ?? 0) * BoardProjection.CellSize;
     public string PreviewLabel => SelectedTool == BuilderTool.Player ? "P" : "M";
 
     public MazeDefinition Definition => new(name, size, walls.ToArray(), playerSpawn, monsterSpawn)
-    { OpenBorderRows = openRows.ToArray(), OpenBorderColumns = openColumns.ToArray() };
+    {
+        OpenBorderRows = openRows.ToArray(), OpenBorderColumns = openColumns.ToArray(),
+        EmptyFoodTiles = emptyFoodTiles.ToArray(), SteroidCheeseTiles = steroidCheeseTiles.ToArray()
+    };
 
     private void Changed()
     {
@@ -112,7 +132,8 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
         }
         BoardSize next = new(height, width);
         if (next == size) return true;
-        bool crops = openRows.Any(row => row >= next.Rows) || openColumns.Any(column => column >= next.Columns) || walls.Any(w => !next.Contains(w.FirstTile) || !next.Contains(w.SecondTile)) ||
+        bool crops = emptyFoodTiles.Concat(steroidCheeseTiles).Any(position => !next.Contains(position)) ||
+            openRows.Any(row => row >= next.Rows) || openColumns.Any(column => column >= next.Columns) || walls.Any(w => !next.Contains(w.FirstTile) || !next.Contains(w.SecondTile)) ||
             playerSpawn is { } p && !next.Contains(p) || monsterSpawn is { } m && !next.Contains(m);
         if (crops && !dialogs.ConfirmCrop())
         {
@@ -121,6 +142,8 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
             return false;
         }
         size = next;
+        emptyFoodTiles.RemoveWhere(position => !size.Contains(position));
+        steroidCheeseTiles.RemoveWhere(position => !size.Contains(position));
         openRows.RemoveWhere(row => row >= size.Rows);
         openColumns.RemoveWhere(column => column >= size.Columns);
         boardCells = null;
@@ -168,10 +191,12 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
     {
         OnPropertyChanged(nameof(PreviewSegments)); OnPropertyChanged(nameof(HasPreviewCell));
         OnPropertyChanged(nameof(PreviewLeft)); OnPropertyChanged(nameof(PreviewTop)); OnPropertyChanged(nameof(PreviewLabel));
+        OnPropertyChanged(nameof(HasFoodPreview)); OnPropertyChanged(nameof(PreviewFoodImage));
     }
 
     public void Place(double x, double y)
     {
+        if (IsFoodTool) { EditFood(x, y, remove: false); return; }
         bool changed = false;
         if (SelectedTool == BuilderTool.Wall)
         {
@@ -187,6 +212,7 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
 
     public void Remove(double x, double y)
     {
+        if (IsFoodTool) { EditFood(x, y, remove: true); return; }
         Wall? horizontal = WallAt(x, y, false), upright = WallAt(x, y, true);
         Wall? candidate = new[] { horizontal, upright }.Where(w => w.HasValue && HasWall(w.Value))
             .OrderBy(w => w!.Value.FirstTile.Row == w.Value.SecondTile.Row
@@ -204,6 +230,25 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
     private HashSet<int>? BorderOpenings(Wall wall) =>
         wall.FirstTile.Column < 0 || wall.SecondTile.Column >= size.Columns ? openRows :
         wall.FirstTile.Row < 0 || wall.SecondTile.Row >= size.Rows ? openColumns : null;
+
+    private bool CanPlaceFood(GridPosition cell) => size.Contains(cell) && cell != playerSpawn &&
+        !BoardCells[cell.Row * size.Columns + cell.Column].IsBlocked;
+
+    private void EditFood(double x, double y, bool remove)
+    {
+        if (CellAt(x, y) is not { } cell) return;
+        if (!CanPlaceFood(cell))
+        {
+            Status = cell == playerSpawn ? "The player starting tile stays empty." : "Food needs a tile reachable from the player.";
+            return;
+        }
+        bool changed;
+        if (remove) changed = emptyFoodTiles.Add(cell) | steroidCheeseTiles.Remove(cell);
+        else if (SelectedTool == BuilderTool.SteroidCheese)
+            changed = steroidCheeseTiles.Add(cell) | emptyFoodTiles.Remove(cell);
+        else changed = emptyFoodTiles.Remove(cell) | steroidCheeseTiles.Remove(cell);
+        if (changed) { Changed(); RefreshBoard(); }
+    }
 
     private int BorderIndex(Wall wall) => wall.FirstTile.Row == wall.SecondTile.Row
         ? wall.FirstTile.Row : wall.FirstTile.Column;
@@ -245,6 +290,8 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
         openRows.Clear(); openRows.UnionWith(maze.OpenBorderRows);
         openColumns.Clear(); openColumns.UnionWith(maze.OpenBorderColumns);
         walls.Clear(); walls.UnionWith(maze.Walls); filePath = path;
+        emptyFoodTiles.Clear(); emptyFoodTiles.UnionWith(maze.EmptyFoodTiles);
+        steroidCheeseTiles.Clear(); steroidCheeseTiles.UnionWith(maze.SteroidCheeseTiles);
         ResetPresentation();
         Status = "Board loaded";
     }
@@ -252,12 +299,15 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
     private void Reset()
     {
         size = new(11, 12); name = ""; playerSpawn = null; monsterSpawn = null; walls.Clear(); openRows.Clear(); openColumns.Clear(); filePath = null;
+        emptyFoodTiles.Clear(); steroidCheeseTiles.Clear();
         ResetPresentation(); Status = "Choose a tool and click the board to begin.";
     }
 
     private void ResetPresentation()
     {
         boardCells = null;
+        ClearPreview();
+        Food.Reset();
         widthInput = size.Columns.ToString(); heightInput = size.Rows.ToString(); dirty = false;
         SelectedTool = BuilderTool.Wall; vertical = false;
         foreach (string property in new[] { nameof(BoardName), nameof(WidthInput), nameof(HeightInput), nameof(FilePath), nameof(IsDirty), nameof(IsVertical), nameof(ToolDescription) }) OnPropertyChanged(property);
@@ -267,6 +317,8 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
     private void RefreshBoard()
     {
         BoardProjection.UpdateBlocked(BoardCells, size, walls, playerSpawn, openRows, openColumns);
+        Food.Refresh(FoodLayout.Create(Definition));
+        RefreshPreview();
         OnPropertyChanged(nameof(RenderedWalls));
         foreach (string property in new[] { nameof(Size), nameof(BoardCells), nameof(WallSegments), nameof(BoardWidth), nameof(BoardHeight), nameof(PlayerSpawn), nameof(MonsterSpawn), nameof(HasPlayerSpawn), nameof(HasMonsterSpawn), nameof(PlayerLeft), nameof(PlayerTop), nameof(MonsterLeft), nameof(MonsterTop) }) OnPropertyChanged(property);
     }

@@ -68,7 +68,7 @@ public sealed class FileMazeRepository : IMazeRepository
         {
             MazeFile file = JsonSerializer.Deserialize<MazeFile>(File.ReadAllText(path), JsonOptions)
                 ?? throw new InvalidDataException("Empty maze file.");
-            if (file.Version != 1) throw new InvalidDataException("Unsupported maze version.");
+            if (file.Version is not (1 or 2)) throw new InvalidDataException("Unsupported maze version.");
             if (file.Width is < 1 or > 100 || file.Height is < 1 or > 100)
                 throw new InvalidDataException("Width and height must be between 1 and 100.");
             if (file.Walls is null) throw new InvalidDataException("The walls array is missing.");
@@ -80,7 +80,11 @@ public sealed class FileMazeRepository : IMazeRepository
             MazeDefinition maze = new(file.Name ?? "", size,
                 file.Walls.Select(w => new Wall(w.FirstTile.ToPosition(), w.SecondTile.ToPosition())).ToHashSet(),
                 file.PlayerSpawn?.ToPosition(), file.MonsterSpawn?.ToPosition())
-            { OpenBorderRows = file.OpenBorderRows ?? [], OpenBorderColumns = file.OpenBorderColumns ?? [] };
+            {
+                OpenBorderRows = file.OpenBorderRows ?? [], OpenBorderColumns = file.OpenBorderColumns ?? [],
+                EmptyFoodTiles = file.Version == 2 ? ReadFoodCoordinates(file.EmptyFoodTiles) : [],
+                SteroidCheeseTiles = file.Version == 2 ? ReadFoodCoordinates(file.SteroidCheeseTiles) : []
+            };
             IReadOnlyList<string> errors = maze.Validate();
             if (errors.Count > 0) throw new InvalidDataException(string.Join(" ", errors));
             return maze;
@@ -118,7 +122,9 @@ public sealed class FileMazeRepository : IMazeRepository
         {
             OpenBorderRows = maze.OpenBorderRows.Order().ToArray(),
             OpenBorderColumns = maze.OpenBorderColumns.Order().ToArray(),
-            Version = 1, Name = maze.Name.Trim(), Width = maze.Size.Columns, Height = maze.Size.Rows,
+            Version = 2, Name = maze.Name.Trim(), Width = maze.Size.Columns, Height = maze.Size.Rows,
+            EmptyFoodTiles = WriteFoodCoordinates(maze.EmptyFoodTiles),
+            SteroidCheeseTiles = WriteFoodCoordinates(maze.SteroidCheeseTiles),
             PlayerSpawn = Coordinate.From(maze.PlayerSpawn!.Value),
             MonsterSpawn = Coordinate.From(maze.MonsterSpawn!.Value),
             Walls = maze.Walls.OrderBy(w => w.FirstTile.Row).ThenBy(w => w.FirstTile.Column)
@@ -140,8 +146,22 @@ public sealed class FileMazeRepository : IMazeRepository
     public static bool IsFileError(Exception exception) =>
         exception is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or System.Security.SecurityException;
 
+    private static GridPosition[] ReadFoodCoordinates(Coordinate[]? coordinates)
+    {
+        if (coordinates is null) return [];
+        if (coordinates.Any(coordinate => coordinate is null))
+            throw new InvalidDataException("Every food tile needs row and column coordinates.");
+        return coordinates.Select(coordinate => coordinate.ToPosition()).Distinct().ToArray();
+    }
+
+    private static Coordinate[] WriteFoodCoordinates(IEnumerable<GridPosition> positions) =>
+        positions.Distinct().OrderBy(position => position.Row).ThenBy(position => position.Column)
+            .Select(Coordinate.From).ToArray();
+
     private sealed class MazeFile
     {
+        public Coordinate[]? EmptyFoodTiles { get; set; }
+        public Coordinate[]? SteroidCheeseTiles { get; set; }
         public int[]? OpenBorderRows { get; set; }
         public int[]? OpenBorderColumns { get; set; }
         public int Version { get; set; }

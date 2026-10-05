@@ -69,7 +69,7 @@
                     <ItemsControl Width="{Binding BoardWidth}"
                                   Height="{Binding BoardHeight}"
                                   ItemsSource="{Binding RenderedWalls}"
-                                  IsHitTestVisible="False">
+                                  IsHitTestVisible="False" Panel.ZIndex="2">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <Canvas />
@@ -90,11 +90,12 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Border Canvas.Left="{Binding MonsterLeft}" Canvas.Top="{Binding MonsterTop}"
-                            Width="36" Height="36" CornerRadius="18" Background="#BE5B77"
-                            BorderBrush="{DynamicResource PrimaryTextBrush}" BorderThickness="2" IsHitTestVisible="False"
+                    <ItemsControl ItemsSource="{Binding Food.Items}" Style="{StaticResource FoodLayerStyle}" Panel.ZIndex="1" />
+                    <Border Canvas.Left="{Binding MonsterLeft}" Canvas.Top="{Binding MonsterTop}" Panel.ZIndex="3"
+                            Width="36" Height="36" CornerRadius="18" Background="Transparent"
+                            BorderBrush="#BE5B77" BorderThickness="1" IsHitTestVisible="False"
                             Visibility="{Binding HasMonsterSpawn, Converter={StaticResource BoolVisibility}}">
-                        <TextBlock Text="M" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <TextBlock Text="M" Foreground="#EE90AB" FontSize="10" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Top" />
                     </Border>
                     <Image Canvas.Left="{Binding PlayerLeft}"
                            Canvas.Top="{Binding PlayerTop}"
@@ -129,6 +130,11 @@
                                Style="{StaticResource ScreenTitleStyle}"
                                FontSize="26" TextWrapping="Wrap"
                                Text="{Binding Title}" />
+                    <TextBlock Text="Score" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Score}" FontSize="36" FontWeight="Bold" Margin="0,0,0,16"
+                               Foreground="{DynamicResource AccentBrush}" AutomationProperties.Name="Score" />
+                    <TextBlock Text="Cheese: 1 point · Steroid: 5 points" TextWrapping="Wrap" Margin="0,0,0,16"
+                               Foreground="{DynamicResource SecondaryTextBrush}" />
                     <Button Padding="12,9"
                             Command="{Binding ReturnToMenuCommand}"
                             Content="Return to Menu" />

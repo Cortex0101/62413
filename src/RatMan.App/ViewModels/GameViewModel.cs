@@ -18,6 +18,7 @@ public sealed class GameViewModel : ScreenViewModel
         : base(session.Name)
     {
         gameSession = session;
+        Food.Refresh(session.RemainingFood);
         Player = new PlayerPresentationViewModel(
             gameSession.Player.Position,
             CellSize,
@@ -34,6 +35,8 @@ public sealed class GameViewModel : ScreenViewModel
     }
 
     public IReadOnlyList<BoardCellViewModel> BoardCells { get; }
+    public FoodPresentationViewModel Food { get; } = new();
+    public int Score => gameSession.Score;
 
     public string MapWarnings { get; init; } = "";
 
@@ -65,6 +68,7 @@ public sealed class GameViewModel : ScreenViewModel
 
     public void Advance(TimeSpan elapsed)
     {
+        Food.Advance(elapsed);
         bool wasWalking = Player.AnimationState == PlayerAnimationState.Walking;
 
         if (!Player.Advance(elapsed))
@@ -72,6 +76,11 @@ public sealed class GameViewModel : ScreenViewModel
             return;
         }
 
+        if (wasWalking && gameSession.CollectFoodAtPlayer() is { } collected)
+        {
+            Food.Remove(collected.Position);
+            OnPropertyChanged(nameof(Score));
+        }
         Player.SetIdle();
 
         if (TryStartQueuedMove())
