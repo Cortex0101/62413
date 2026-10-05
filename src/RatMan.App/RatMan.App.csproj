@@ -20,6 +20,7 @@
 			  Link="Assets\Images\ratman-spritesheet.png" />
     <Resource Include="..\RatMan.Game\assets\img\tiny-cheese.png" Link="Assets\Images\tiny-cheese.png" />
     <Resource Include="..\RatMan.Game\assets\img\huge-cheese.png" Link="Assets\Images\huge-cheese.png" />
+	  <Resource Include="..\RatMan.Game\assets\img\ratman-steroid-spritesheet.png" Link="Assets\Images\ratman-steroid-spritesheet.png" />
   </ItemGroup>
 
 </Project>
