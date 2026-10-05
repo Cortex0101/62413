@@ -16,7 +16,7 @@ public sealed class SpriteFrameProvider : ISpriteFrameProvider
 {
     private readonly IReadOnlyDictionary<SpriteRectangle, ImageSource> frames;
 
-    public SpriteFrameProvider(SpriteSheetDefinition sheet)
+    public SpriteFrameProvider(SpriteSheetDefinition sheet, int? canvasSize = null)
     {
         ArgumentNullException.ThrowIfNull(sheet);
 
@@ -38,7 +38,20 @@ public sealed class SpriteFrameProvider : ISpriteFrameProvider
                 croppedFrame.Freeze();
             }
 
-            loadedFrames.Add(source, croppedFrame);
+            ImageSource image = croppedFrame;
+            if (canvasSize is { } size)
+            {
+                if (size < source.Width || size < source.Height)
+                    throw new ArgumentOutOfRangeException(nameof(canvasSize));
+                DrawingGroup drawing = new();
+                drawing.Children.Add(new GeometryDrawing(Brushes.Transparent, null, new RectangleGeometry(new Rect(0, 0, size, size))));
+                drawing.Children.Add(new ImageDrawing(croppedFrame,
+                    new Rect((size - source.Width) / 2d, (size - source.Height) / 2d, source.Width, source.Height)));
+                DrawingImage padded = new(drawing);
+                padded.Freeze();
+                image = padded;
+            }
+            loadedFrames.Add(source, image);
         }
 
         frames = loadedFrames;

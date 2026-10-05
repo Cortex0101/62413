@@ -12,13 +12,17 @@ public sealed class SpriteAnimationTests
     [TestMethod]
     public void PlayerPresentation_WrapEntersFromOppositeEdge()
     {
-        PlayerPresentationViewModel player = new(new GridPosition(1, 0), 36, CreateRatManAnimator());
-        player.BeginMove(new GridPosition(1, 3), Direction.Left, wraps: true);
+        var model = new Player(new(1, 0));
+        PlayerPresentationViewModel player = new(model, 36);
+        model.Motion.Begin(new(1, 3), Direction.Left, true, PlayerPresentationViewModel.DefaultMoveDuration);
+        player.Synchronize(TimeSpan.Zero, false);
         Assert.AreEqual(144d, player.Left);
-        player.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
+        model.Motion.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
+        player.Synchronize(PlayerPresentationViewModel.DefaultMoveDuration / 2, false);
         Assert.AreEqual(126d, player.Left);
         Assert.AreEqual(36d, player.Top);
-        Assert.IsTrue(player.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2));
+        model.Motion.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
+        player.Synchronize(PlayerPresentationViewModel.DefaultMoveDuration / 2, false);
         Assert.AreEqual(108d, player.Left);
     }
 
@@ -74,62 +78,55 @@ public sealed class SpriteAnimationTests
     [TestMethod]
     public void PlayerPresentation_AcceptedMove_InterpolatesAndSnapsExactly()
     {
-        SpriteAnimator animator = CreateRatManAnimator();
-        PlayerPresentationViewModel player = new(
-            new GridPosition(1, 1),
-            36,
-            animator);
+        var model = new Player(new(1, 1));
+        PlayerPresentationViewModel player = new(model, 36);
+        model.Motion.Begin(new(1, 2), Direction.Right, false, PlayerPresentationViewModel.DefaultMoveDuration);
+        model.Motion.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
+        player.Synchronize(PlayerPresentationViewModel.DefaultMoveDuration / 2, false);
 
-        player.BeginMove(new GridPosition(1, 2), Direction.Right);
-        bool completedHalfway = player.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
-
-        Assert.IsFalse(completedHalfway);
+        Assert.AreEqual(new GridPosition(1, 1), model.Position);
         Assert.AreEqual(54d, player.Left);
         Assert.AreEqual(36d, player.Top);
         Assert.AreEqual(Direction.Right, player.FacingDirection);
-        Assert.AreEqual("walking-right", animator.CurrentClipName);
+        Assert.AreEqual(PlayerAnimationState.Walking, player.AnimationState);
 
-        bool completed = player.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
+        model.Motion.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
+        player.Synchronize(PlayerPresentationViewModel.DefaultMoveDuration / 2, false);
 
-        Assert.IsTrue(completed);
+        Assert.AreEqual(new GridPosition(1, 2), model.Position);
         Assert.AreEqual(72d, player.Left);
         Assert.AreEqual(36d, player.Top);
     }
 
     [TestMethod]
-    public void PlayerPresentation_QueueDirection_ReplacesEarlierInput()
+    public void Engine_QueueDirection_ReplacesEarlierInput()
     {
-        PlayerPresentationViewModel player = new(
-            new GridPosition(1, 1),
-            36,
-            CreateRatManAnimator());
-
-        player.QueueDirection(Direction.Down);
-        player.QueueDirection(Direction.Left);
-
-        Assert.IsTrue(player.TryTakeQueuedDirection(out Direction direction));
-        Assert.AreEqual(Direction.Left, direction);
-        Assert.IsFalse(player.TryTakeQueuedDirection(out _));
+        GameSession session = new(new BoardSize(5, 5), new GridPosition(1, 1));
+        session.RequestDirection(Direction.Right);
+        session.RequestDirection(Direction.Down);
+        session.RequestDirection(Direction.Left);
+        session.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
+        Assert.AreEqual(new GridPosition(1, 2), session.Player.Position);
+        Assert.AreEqual(Direction.Left, session.Player.FacingDirection);
+        Assert.AreEqual(new GridPosition(1, 1), session.Player.Motion.Destination);
     }
 
     [TestMethod]
     public void PlayerPresentation_BlockedReaction_ReturnsToDirectionalIdle()
     {
-        SpriteAnimator animator = CreateRatManAnimator();
-        PlayerPresentationViewModel player = new(
-            new GridPosition(1, 1),
-            36,
-            animator);
-
-        player.ShowBlocked(Direction.Up);
-        bool completed = player.Advance(TimeSpan.FromMilliseconds(210));
-
-        Assert.IsTrue(completed);
+        var model = new Player(new(1, 1));
+        PlayerPresentationViewModel player = new(model, 36);
+        model.Motion.Begin(new(0, 1), Direction.Up, false, TimeSpan.FromMilliseconds(350));
+        model.Motion.Advance(TimeSpan.FromMilliseconds(350));
+        model.BlockedRemaining = TimeSpan.FromMilliseconds(210);
+        player.Synchronize(TimeSpan.Zero, false);
+        Assert.AreEqual(PlayerAnimationState.Blocked, player.AnimationState);
+        model.BlockedRemaining = TimeSpan.Zero;
+        player.Synchronize(TimeSpan.FromMilliseconds(210), false);
         Assert.AreEqual(PlayerAnimationState.Idle, player.AnimationState);
         Assert.AreEqual(Direction.Up, player.FacingDirection);
-        Assert.AreEqual("idle-up", animator.CurrentClipName);
         Assert.AreEqual(36d, player.Left);
-        Assert.AreEqual(36d, player.Top);
+        Assert.AreEqual(0d, player.Top);
     }
 
     [TestMethod]

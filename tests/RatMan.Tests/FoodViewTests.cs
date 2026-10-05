@@ -54,6 +54,7 @@ public sealed class FoodViewTests
                 Assert.AreEqual(76, Descendants(layer).OfType<Image>().Count(image => image.Source is not null));
                 Assert.IsTrue(Descendants(gameView).OfType<TextBlock>().Any(text => text.Text == "5"));
                 VerifyClockLifecycle(gameView);
+                GhostPresentationTests.VerifyAndRender();
 
                 var editor = new BoardBuilderViewModel(new MemoryMazeRepository(), new TestEditorDialogs(), () => { }, () => { });
                 editor.Load(maze, "preview.maze");
@@ -100,16 +101,16 @@ public sealed class FoodViewTests
         }
     }
 
-    private static void Render(FrameworkElement view, string name)
+    internal static void Render(FrameworkElement view, string name, int width = 720, int height = 880)
     {
         // Match the main window's inherited colors in an offscreen render.
         view.SetResourceReference(Control.ForegroundProperty, "PrimaryTextBrush");
         view.SetResourceReference(Control.BackgroundProperty, "WindowBackgroundBrush");
-        view.Measure(new Size(720, 880));
-        view.Arrange(new Rect(0, 0, 720, 880));
+        view.Measure(new Size(width, height));
+        view.Arrange(new Rect(0, 0, width, height));
         view.UpdateLayout();
         view.Dispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
-        var bitmap = new RenderTargetBitmap(720, 880, 96, 96, PixelFormats.Pbgra32);
+        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(view);
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));

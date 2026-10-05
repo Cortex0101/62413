@@ -91,12 +91,26 @@
                     </ItemsControl>
 
                     <ItemsControl ItemsSource="{Binding Food.Items}" Style="{StaticResource FoodLayerStyle}" Panel.ZIndex="1" />
-                    <Border Canvas.Left="{Binding MonsterLeft}" Canvas.Top="{Binding MonsterTop}" Panel.ZIndex="3"
-                            Width="36" Height="36" CornerRadius="18" Background="Transparent"
-                            BorderBrush="#BE5B77" BorderThickness="1" IsHitTestVisible="False"
-                            Visibility="{Binding HasMonsterSpawn, Converter={StaticResource BoolVisibility}}">
-                        <TextBlock Text="M" Foreground="#EE90AB" FontSize="10" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                    </Border>
+                    <ItemsControl ItemsSource="{Binding Cats}" Width="{Binding BoardWidth}" Height="{Binding BoardHeight}"
+                                  Panel.ZIndex="9" IsHitTestVisible="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                                <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Image Width="{DynamicResource GameCellSize}" Height="{DynamicResource GameCellSize}"
+                                       Source="{Binding CurrentImage}" Opacity="{Binding Opacity}"
+                                       Visibility="{Binding IsVisible, Converter={StaticResource BoolVisibility}}"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Uniform" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                     <Image Canvas.Left="{Binding PlayerLeft}"
                            Canvas.Top="{Binding PlayerTop}"
                            Panel.ZIndex="10"
@@ -133,8 +147,25 @@
                     <TextBlock Text="Score" FontSize="18" FontWeight="SemiBold" />
                     <TextBlock Text="{Binding Score}" FontSize="36" FontWeight="Bold" Margin="0,0,0,16"
                                Foreground="{DynamicResource AccentBrush}" AutomationProperties.Name="Score" />
-                    <TextBlock Text="Cheese: 1 point · Steroid: 5 points" TextWrapping="Wrap" Margin="0,0,0,16"
+                    <TextBlock Text="{Binding Lives, StringFormat='Lives: {0}'}" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <TextBlock Text="{Binding CheeseText}" Margin="0,0,0,8" />
+                    <TextBlock Text="{Binding PowerText}" TextWrapping="Wrap" Margin="0,0,0,12" Foreground="{DynamicResource AccentBrush}" />
+                    <TextBlock Text="Cheese: 1 · Steroid: 5 · Cat: 20" TextWrapping="Wrap" Margin="0,0,0,16"
                                Foreground="{DynamicResource SecondaryTextBrush}" />
+                    <ItemsControl ItemsSource="{Binding Cats}" Margin="0,0,0,16">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,10">
+                                    <Image DockPanel.Dock="Left" Source="{Binding Portrait}" Width="32" Height="32" Margin="0,0,8,0"
+                                           RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Status}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                     <Button Padding="12,9"
                             Command="{Binding ReturnToMenuCommand}"
                             Content="Return to Menu" />
@@ -166,6 +197,17 @@
                 </StackPanel>
             </Grid>
             </ScrollViewer>
+        </Border>
+        <Border Grid.ColumnSpan="2" Panel.ZIndex="20" Background="#D9101522" CornerRadius="8"
+                Visibility="{Binding HasOverlay, Converter={StaticResource BoolVisibility}}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360" Margin="24">
+                <TextBlock Text="{Binding OutcomeTitle}" FontSize="38" FontWeight="Bold" TextAlignment="Center"
+                           Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="{Binding OutcomeMessage}" FontSize="20" TextAlignment="Center" TextWrapping="Wrap" Margin="0,16,0,24" />
+                <Button Content="Replay" Command="{Binding ReplayCommand}" Focusable="False" Padding="20,12" Margin="0,0,0,10"
+                        Visibility="{Binding IsFinished, Converter={StaticResource BoolVisibility}}" />
+                <Button Content="Return to Menu" Command="{Binding ReturnToMenuCommand}" Padding="20,12" Focusable="False" />
+            </StackPanel>
         </Border>
     </Grid>
 </UserControl>

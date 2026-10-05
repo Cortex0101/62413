@@ -9,15 +9,17 @@ The current game includes:
 - A main-window shell with view-model-first navigation.
 - Main menu commands for play, board building, high scores, settings, about, and exit.
 - Placeholder screens for features scheduled in later weeks.
-- A retained-mode Canvas showing the selected maze, player, and static monster spawn marker.
+- A retained-mode Canvas showing the selected maze, animated Ratman, and four animated cats.
 - A board builder with editable dimensions, boundary walls, and player/monster spawns.
 - Versioned `.maze` files and map selection when multiple saved boards are available.
 - Arrow-key and WASD movement with board-boundary enforcement.
 - Shared WPF colors, brushes, dimensions, typography, and control styles.
 - Automated engine and application view-model tests.
 - Normal and animated steroid cheese, editor food tools, and a live per-game score.
+- Distinct cat targets, cheese-based releases, steroid scatter, edible cats, and harmless return-home movement.
+- Three lives, a power timer, cat status indicators, victory/Game Over overlays, and replay.
 
-Moving cats, steroid power effects, persistent high scores, and additional gameplay states are scheduled for later milestones. Monster markers currently indicate starting positions only.
+Persistent high scores, settings, and additional levels remain scheduled for later milestones. Game rules run in the WPF-independent engine using a deterministic 10 ms simulation step.
 
 ## Prerequisites
 
@@ -68,9 +70,17 @@ The game view restores keyboard focus when opened. The player keeps moving until
 
 ## Food and score
 
-Every tile reachable from the player starts with normal cheese, except the player's starting tile and tiles cleared in the editor. Normal cheese randomly uses one of four appearances, stable throughout that game, and awards **1 point**. Animated steroid cheese replaces normal cheese and awards **5 points**; it has no power effect yet.
+Every tile reachable from the player starts with normal cheese, except the player's starting tile and tiles cleared in the editor. Normal cheese randomly uses one of four appearances, stable throughout that game, and awards **1 point**. Animated steroid cheese replaces normal cheese and awards **5 points**, powers up Ratman, and sends active cats into scatter for **10 seconds**. Another steroid refreshes that timer.
 
-Food disappears and the score increases when the mouse finishes entering the tile, including after a tunnel wrap. Each cheese can be collected only once. New games restore the map's food and reset the score to **0**. Movement continues after all food is collected; scores are not saved between games.
+Food disappears and the score increases when the mouse finishes entering the tile, including after a tunnel wrap. Each cheese can be collected only once. Eating a scared cat awards **20 points**. Collecting all cheese wins the round. New games and Replay restore the map's food and reset the score to **0**; scores are not saved between games.
+
+## Cats and lives
+
+All cats leave the existing monster spawn. Blinky (red) releases immediately; Pinky (cyan), Inky (pink), and Clyde (orange) release after **10%, 25%, and 50%** of the initial cheese count, rounded upward. Steroid cheese counts as one piece for release progress. Each cat uses its own chase target and scatter corner, with shortest-path navigation around walls and through tunnels. The names and colors follow this project's [cat specification](src/RatMan.App/docs/cats.md).
+
+During steroid power, cats head toward their corners, show scared sprites, and become edible. Eaten cats return home at double their normal speed, harmless and faded, then wait for the active power effect to end. Waiting and recovering cats appear in the sidebar.
+
+Ratman starts with **three lives**. A chasing cat's touch costs one life and resets actors after a one-second pause, retaining score, eaten cheese, and release eligibility. The third catch ends the game. Victory and Game Over stop gameplay and offer Replay of the same map or Return to Menu. Disconnected cat homes produce a warning while preserving the map's walls and tunnels.
 
 ## Board Builder
 

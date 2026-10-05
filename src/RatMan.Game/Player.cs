@@ -4,13 +4,16 @@ public sealed class Player
 {
     internal Player(GridPosition startingPosition)
     {
-        Position = startingPosition;
+        Motion = new(startingPosition);
     }
 
-    public GridPosition Position { get; private set; }
+    public ActorMotion Motion { get; }
+    public GridPosition Position => Motion.Position;
+    public Direction FacingDirection => Motion.FacingDirection;
+    public TimeSpan BlockedRemaining { get; internal set; }
 
-    internal void MoveTo(GridPosition position)
+    internal void MoveTo(GridPosition position, Direction direction)
     {
-        Position = position;
+        Motion.Reset(position, direction);
     }
 }

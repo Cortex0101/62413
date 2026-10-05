@@ -70,8 +70,11 @@ public sealed class AppViewModelTests
         game.MoveCommand.Execute(Direction.Right);
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
 
+        Assert.AreEqual("Row 9, Column 5", game.PlayerPosition);
+        Assert.AreEqual(144d + 36d * 170 / 350, game.PlayerLeft, .000001);
+        Assert.IsFalse(changedProperties.Contains(nameof(game.PlayerPosition)));
+        game.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
         Assert.AreEqual("Row 9, Column 6", game.PlayerPosition);
-        Assert.AreEqual(162d, game.PlayerLeft);
         CollectionAssert.IsSubsetOf(
             new[] { nameof(game.PlayerLeft), nameof(game.PlayerPosition) },
             changedProperties.ToArray());
@@ -118,10 +121,16 @@ public sealed class AppViewModelTests
         game.MoveCommand.Execute(turn);
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
 
-        Assert.AreEqual(first, session.Player.Position);
+        Assert.AreEqual(start, session.Player.Position);
         Assert.AreEqual(forward, game.Player.FacingDirection);
 
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
+
+        Assert.AreEqual(first, session.Player.Position);
+        Assert.AreEqual(forward, game.Player.FacingDirection);
+        Assert.AreEqual(PlayerAnimationState.Walking, game.Player.AnimationState);
+
+        game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
 
         Assert.AreEqual(second, session.Player.Position);
         Assert.AreEqual(forward, game.Player.FacingDirection);
@@ -130,12 +139,7 @@ public sealed class AppViewModelTests
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
 
         Assert.AreEqual(opening, session.Player.Position);
-        Assert.AreEqual(forward, game.Player.FacingDirection);
-        Assert.AreEqual(PlayerAnimationState.Walking, game.Player.AnimationState);
-
-        game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
-
-        Assert.AreEqual(opening.AdjacentTo(turn), session.Player.Position);
+        Assert.AreEqual(opening.AdjacentTo(turn), session.Player.Motion.Destination);
         Assert.AreEqual(opening.Column * GameViewModel.CellSize, game.PlayerLeft);
         Assert.AreEqual(opening.Row * GameViewModel.CellSize, game.PlayerTop);
         Assert.AreEqual(turn, game.Player.FacingDirection);
@@ -161,7 +165,8 @@ public sealed class AppViewModelTests
         game.MoveCommand.Execute(turn);
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
 
-        Assert.AreEqual(start.AdjacentTo(forward).AdjacentTo(forward), session.Player.Position);
+        Assert.AreEqual(start.AdjacentTo(forward), session.Player.Position);
+        Assert.AreEqual(start.AdjacentTo(forward).AdjacentTo(forward), session.Player.Motion.Destination);
         Assert.AreEqual(forward, game.Player.FacingDirection);
         Assert.AreEqual(PlayerAnimationState.Walking, game.Player.AnimationState);
     }
@@ -185,7 +190,8 @@ public sealed class AppViewModelTests
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
 
-        Assert.AreEqual(new GridPosition(3, 3).AdjacentTo(latest).AdjacentTo(latest), session.Player.Position);
+        Assert.AreEqual(new GridPosition(3, 3).AdjacentTo(latest), session.Player.Position);
+        Assert.AreEqual(new GridPosition(3, 3).AdjacentTo(latest).AdjacentTo(latest), session.Player.Motion.Destination);
         Assert.AreEqual(latest, game.Player.FacingDirection);
         Assert.AreEqual(PlayerAnimationState.Walking, game.Player.AnimationState);
     }
@@ -226,7 +232,7 @@ public sealed class AppViewModelTests
         game.MoveCommand.Execute(Direction.Down);
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
 
-        Assert.AreEqual(new GridPosition(4, 2), session.Player.Position);
+        Assert.AreEqual(new GridPosition(3, 2), session.Player.Position);
         Assert.AreEqual(Direction.Down, game.Player.FacingDirection);
         Assert.AreEqual(PlayerAnimationState.Walking, game.Player.AnimationState);
     }
@@ -234,14 +240,14 @@ public sealed class AppViewModelTests
     [TestMethod]
     public void MoveCommand_WhileMoving_ContinuesInLatestDirectionUntilBlocked()
     {
-        GameViewModel game = new(() => { }, new GameSession(TestMazes.Sample));
+        GameViewModel game = new(() => { }, new GameSession(TestMazes.Sample.Size, TestMazes.Sample.PlayerSpawn!.Value, TestMazes.Sample.Walls));
 
         game.MoveCommand.Execute(Direction.Right);
         game.MoveCommand.Execute(Direction.Down);
         game.MoveCommand.Execute(Direction.Left);
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
 
-        Assert.AreEqual("Row 9, Column 5", game.PlayerPosition);
+        Assert.AreEqual("Row 9, Column 6", game.PlayerPosition);
         Assert.AreEqual(PlayerAnimationState.Walking, game.Player.AnimationState);
         Assert.AreEqual(Direction.Left, game.Player.FacingDirection);
 

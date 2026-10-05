@@ -73,7 +73,13 @@ public sealed class FoodTests
     [DataRow(true)]
     public void GameView_CollectsOnlyAtArrival_BeforeNextMove(bool wraps)
     {
-        var maze = Maze with { SteroidCheeseTiles = [new(0, 3)], OpenBorderRows = wraps ? [0] : [] };
+        // Isolate the home so this test measures collection, independent of cat contact.
+        var maze = Maze with
+        {
+            Size = new(2, 4), MonsterSpawn = new(1, 3),
+            Walls = Enumerable.Range(0, 4).Select(c => new Wall(new(0, c), new(1, c))).ToArray(),
+            SteroidCheeseTiles = [new(0, 3)], OpenBorderRows = wraps ? [0] : []
+        };
         var session = new GameSession(maze);
         var game = new GameViewModel(() => { }, session);
         int notifications = 0;
@@ -91,9 +97,9 @@ public sealed class FoodTests
     }
 
     [TestMethod]
-    public void GameView_LastFoodKeepsMovementAvailable_BlockedAndIdleDoNotScore()
+    public void GameView_LastFoodWins_BlockedAndFinishedDoNotScore()
     {
-        var game = new GameViewModel(() => { }, new GameSession(new MazeDefinition("Two", new(1, 2), [], new(0, 0), new(0, 1))));
+        var game = new GameViewModel(() => { }, new GameSession(new BoardSize(1, 2), new(0, 0)));
         game.MoveCommand.Execute(Direction.Left);
         game.Advance(TimeSpan.FromSeconds(1));
         Assert.AreEqual(0, game.Score);
@@ -101,11 +107,13 @@ public sealed class FoodTests
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
         Assert.AreEqual(1, game.Score);
         Assert.AreEqual(0, game.Food.Items.Count);
+        Assert.IsTrue(game.IsFinished);
+        Assert.AreEqual("You win!", game.OutcomeTitle);
         game.Advance(TimeSpan.FromSeconds(1));
         game.Advance(TimeSpan.FromSeconds(1));
         game.MoveCommand.Execute(Direction.Left);
         game.Advance(PlayerPresentationViewModel.DefaultMoveDuration);
-        Assert.AreEqual(0d, game.PlayerLeft);
+        Assert.AreEqual(36d, game.PlayerLeft);
         Assert.AreEqual(1, game.Score);
     }
 

@@ -1,7 +1,5 @@
 using System.Windows.Input;
-using System.ComponentModel;
 using System.Windows.Media;
-using RatMan.App.Animation;
 using RatMan.App.Mvvm;
 using RatMan.Game;
 
@@ -11,147 +9,110 @@ public sealed class GameViewModel : ScreenViewModel
 {
     public const double CellSize = BoardProjection.CellSize;
     public const double WallThickness = BoardProjection.WallThickness;
-
     private readonly GameSession gameSession;
+    private int score, lives;
+    private string powerText = "", cheeseText = "", playerPosition = "";
+    private RoundStatus status;
+    private string mapWarnings = "";
 
-    public GameViewModel(Action returnToMenu, GameSession session)
-        : base(session.Name)
+    public GameViewModel(Action returnToMenu, GameSession session) : base(session.Name)
     {
         gameSession = session;
         Food.Refresh(session.RemainingFood);
-        Player = new PlayerPresentationViewModel(
-            gameSession.Player.Position,
-            CellSize,
-            RatManSpriteSheet.CreateAnimator());
-        Player.PropertyChanged += OnPlayerPropertyChanged;
-        BoardCells = BoardProjection.Cells(gameSession.BoardSize);
-        WallSegments = BoardProjection.Segments(gameSession.Walls);
-        RenderedWalls = WallSegments.Concat(BoardProjection.Borders(gameSession.BoardSize,
-            gameSession.OpenBorderRows, gameSession.OpenBorderColumns)).ToArray();
-        BoardProjection.UpdateBlocked(BoardCells, gameSession.BoardSize, gameSession.Walls,
-            gameSession.Player.Position, gameSession.OpenBorderRows, gameSession.OpenBorderColumns);
-        MoveCommand = new RelayCommand(Move);
+        Player = new(session.Player, CellSize);
+        Player.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(Player.Left)) OnPropertyChanged(nameof(PlayerLeft));
+            if (e.PropertyName == nameof(Player.Top)) OnPropertyChanged(nameof(PlayerTop));
+            if (e.PropertyName == nameof(Player.CurrentImage)) OnPropertyChanged(nameof(PlayerImage));
+        };
+        Cats = session.Cats.Select(cat => new CatPresentationViewModel(cat)).ToArray();
+        BoardCells = BoardProjection.Cells(session.BoardSize);
+        WallSegments = BoardProjection.Segments(session.Walls);
+        RenderedWalls = WallSegments.Concat(BoardProjection.Borders(session.BoardSize,
+            session.OpenBorderRows, session.OpenBorderColumns)).ToArray();
+        BoardProjection.UpdateBlocked(BoardCells, session.BoardSize, session.Walls,
+            session.Player.Position, session.OpenBorderRows, session.OpenBorderColumns);
+        MoveCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is not Direction direction) return;
+            session.RequestDirection(direction);
+            Synchronize(TimeSpan.Zero);
+        });
+        ReplayCommand = new RelayCommand(_ =>
+        {
+            if (!session.IsFinished) return;
+            session.Restart();
+            Player.ResetAnimation();
+            foreach (var cat in Cats) cat.ResetAnimation();
+            Food.Reset();
+            Food.Refresh(session.RemainingFood);
+            Synchronize(TimeSpan.Zero);
+        }, _ => session.IsFinished);
         ReturnToMenuCommand = new RelayCommand(_ => returnToMenu());
+        Synchronize(TimeSpan.Zero);
     }
 
     public IReadOnlyList<BoardCellViewModel> BoardCells { get; }
-    public FoodPresentationViewModel Food { get; } = new();
-    public int Score => gameSession.Score;
-
-    public string MapWarnings { get; init; } = "";
-
     public IReadOnlyList<WallSegmentViewModel> WallSegments { get; }
     public IReadOnlyList<WallSegmentViewModel> RenderedWalls { get; }
-
-    public bool HasMonsterSpawn => gameSession.MonsterStartingPosition.HasValue;
-    public double MonsterLeft => (gameSession.MonsterStartingPosition?.Column ?? 0) * CellSize;
-    public double MonsterTop => (gameSession.MonsterStartingPosition?.Row ?? 0) * CellSize;
-
+    public FoodPresentationViewModel Food { get; } = new();
     public PlayerPresentationViewModel Player { get; }
-
-    public ICommand MoveCommand { get; }
-
-    public ICommand ReturnToMenuCommand { get; }
-
+    public IReadOnlyList<CatPresentationViewModel> Cats { get; }
+    public int Score { get => score; private set => SetProperty(ref score, value); }
+    public int Lives { get => lives; private set => SetProperty(ref lives, value); }
+    public string PowerText { get => powerText; private set => SetProperty(ref powerText, value); }
+    public string CheeseText { get => cheeseText; private set => SetProperty(ref cheeseText, value); }
+    public string PlayerPosition { get => playerPosition; private set => SetProperty(ref playerPosition, value); }
+    public bool IsFinished => status is RoundStatus.Won or RoundStatus.GameOver;
+    public bool HasOverlay => status != RoundStatus.Playing;
+    public string OutcomeTitle => status switch { RoundStatus.Won => "You win!", RoundStatus.GameOver => "Game over", _ => "Caught!" };
+    public string OutcomeMessage => IsFinished ? $"Final score: {Score}" : $"{Lives} lives remaining. Get ready…";
+    public string MapWarnings
+    {
+        get => string.Join("\n", new[] { mapWarnings, gameSession.IsMonsterDisconnected
+            ? "The cat home is disconnected from Ratman. Cats cannot reach you on this map." : "" }.Where(s => s.Length > 0));
+        init => mapWarnings = value;
+    }
+    public bool HasMonsterSpawn => gameSession.MonsterStartingPosition.HasValue;
     public double BoardWidth => gameSession.BoardSize.Columns * CellSize;
-
     public double BoardHeight => gameSession.BoardSize.Rows * CellSize;
-
     public double PlayerLeft => Player.Left;
-
     public double PlayerTop => Player.Top;
-
     public ImageSource PlayerImage => Player.CurrentImage;
-
-    public string PlayerPosition =>
-        $"Row {gameSession.Player.Position.Row + 1}, Column {gameSession.Player.Position.Column + 1}";
+    public ICommand MoveCommand { get; }
+    public ICommand ReturnToMenuCommand { get; }
+    public RelayCommand ReplayCommand { get; }
 
     public void Advance(TimeSpan elapsed)
     {
-        Food.Advance(elapsed);
-        bool wasWalking = Player.AnimationState == PlayerAnimationState.Walking;
-
-        if (!Player.Advance(elapsed))
-        {
-            return;
-        }
-
-        if (wasWalking && gameSession.CollectFoodAtPlayer() is { } collected)
-        {
-            Food.Remove(collected.Position);
-            OnPropertyChanged(nameof(Score));
-        }
-        Player.SetIdle();
-
-        if (TryStartQueuedMove())
-        {
-            return;
-        }
-
-        if (wasWalking && !TryStartMove(Player.FacingDirection))
-        {
-            Player.ShowBlocked(Player.FacingDirection);
-        }
+        if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
+        if (gameSession.IsFinished) return;
+        gameSession.Advance(elapsed);
+        if (gameSession.Status == RoundStatus.Playing) Food.Advance(elapsed);
+        Synchronize(gameSession.Status == RoundStatus.Playing ? elapsed : TimeSpan.Zero);
     }
 
-    private void Move(object? parameter)
+    private void Synchronize(TimeSpan elapsed)
     {
-        if (parameter is not Direction direction)
+        if (Food.Items.Count != gameSession.RemainingFood.Count)
+            foreach (var item in Food.Items.Where(item => !gameSession.RemainingFood.ContainsKey(item.Position)).ToArray())
+                Food.Remove(item.Position);
+        Player.Synchronize(elapsed, gameSession.IsPowered);
+        foreach (var cat in Cats) cat.Synchronize(elapsed, gameSession.CollectedCheeseCount);
+        Score = gameSession.Score;
+        Lives = gameSession.Lives;
+        PowerText = gameSession.IsPowered ? $"Steroid power · {Math.Ceiling(gameSession.PowerRemaining.TotalSeconds):0}s" : "Cats are chasing";
+        CheeseText = $"Cheese: {gameSession.CollectedCheeseCount} / {gameSession.InitialCheeseCount}";
+        PlayerPosition = $"Row {gameSession.Player.Position.Row + 1}, Column {gameSession.Player.Position.Column + 1}";
+        if (status != gameSession.Status)
         {
-            return;
-        }
-
-        Player.QueueDirection(direction);
-
-        if (!Player.IsBusy)
-        {
-            TryStartQueuedMove();
-        }
-    }
-
-    private bool TryStartQueuedMove()
-    {
-        if (!Player.TryTakeQueuedDirection(out Direction direction))
-        {
-            return false;
-        }
-
-        if (TryStartMove(direction))
-        {
-            return true;
-        }
-
-        // Keep a blocked turn pending until the player reaches an opening.
-        Player.QueueDirection(direction);
-        return false;
-    }
-
-    private bool TryStartMove(Direction direction)
-    {
-        bool wraps = !gameSession.BoardSize.Contains(gameSession.Player.Position.AdjacentTo(direction));
-        if (!gameSession.TryMovePlayer(direction))
-        {
-            return false;
-        }
-
-        Player.BeginMove(gameSession.Player.Position, direction, wraps);
-        OnPropertyChanged(nameof(PlayerPosition));
-        return true;
-    }
-
-    private void OnPlayerPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(PlayerPresentationViewModel.Left))
-        {
-            OnPropertyChanged(nameof(PlayerLeft));
-        }
-        else if (e.PropertyName == nameof(PlayerPresentationViewModel.Top))
-        {
-            OnPropertyChanged(nameof(PlayerTop));
-        }
-        else if (e.PropertyName == nameof(PlayerPresentationViewModel.CurrentImage))
-        {
-            OnPropertyChanged(nameof(PlayerImage));
+            status = gameSession.Status;
+            OnPropertyChanged(nameof(IsFinished));
+            OnPropertyChanged(nameof(HasOverlay));
+            OnPropertyChanged(nameof(OutcomeTitle));
+            OnPropertyChanged(nameof(OutcomeMessage));
+            ReplayCommand.RaiseCanExecuteChanged();
         }
     }
 }
