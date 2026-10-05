@@ -3,12 +3,18 @@ namespace RatMan.Game;
 public sealed class GameSession
 {
     private readonly HashSet<Wall> walls;
+    private readonly BoardTopology topology;
+    public IReadOnlyCollection<int> OpenBorderRows { get; } = [];
+    public IReadOnlyCollection<int> OpenBorderColumns { get; } = [];
 
     public GameSession(MazeDefinition maze)
         : this(Validated(maze).Size, maze.PlayerSpawn!.Value, maze.Walls)
     {
         Name = maze.Name;
         MonsterStartingPosition = maze.MonsterSpawn;
+        OpenBorderRows = maze.OpenBorderRows.ToArray();
+        OpenBorderColumns = maze.OpenBorderColumns.ToArray();
+        topology = new(BoardSize, walls, OpenBorderRows, OpenBorderColumns);
     }
 
     private static MazeDefinition Validated(MazeDefinition maze)
@@ -53,6 +59,7 @@ public sealed class GameSession
 
         BoardSize = boardSize;
         Player = new Player(playerStartingPosition);
+        topology = new(BoardSize, this.walls, [], []);
     }
 
     public BoardSize BoardSize { get; }
@@ -63,14 +70,7 @@ public sealed class GameSession
 
     public bool TryMovePlayer(Direction direction)
     {
-        GridPosition destination = Player.Position.AdjacentTo(direction);
-
-        if (!BoardSize.Contains(destination))
-        {
-            return false;
-        }
-
-        if (walls.Contains(new Wall(Player.Position, destination)))
+        if (!topology.TryStep(Player.Position, direction, out GridPosition destination))
         {
             return false;
         }

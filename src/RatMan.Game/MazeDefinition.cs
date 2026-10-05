@@ -9,9 +9,16 @@ public sealed record MazeDefinition(
 {
     public const int MaximumDimension = 100;
 
+    // Each index opens both opposing borders, so an unpaired opening is impossible.
+    public IReadOnlyCollection<int> OpenBorderRows { get; init; } = [];
+    public IReadOnlyCollection<int> OpenBorderColumns { get; init; } = [];
+
     public IReadOnlyList<string> Validate()
     {
         List<string> errors = [];
+        if (OpenBorderRows.Any(row => row < 0 || row >= Size.Rows) ||
+            OpenBorderColumns.Any(column => column < 0 || column >= Size.Columns))
+            errors.Add("Border openings must be inside the board dimensions.");
         if (string.IsNullOrWhiteSpace(Name)) errors.Add("Enter a board name.");
         if (Size.Rows > MaximumDimension || Size.Columns > MaximumDimension)
             errors.Add("Width and height must be between 1 and 100.");

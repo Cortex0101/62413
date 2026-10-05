@@ -10,6 +10,19 @@ namespace RatMan.Tests;
 public sealed class SpriteAnimationTests
 {
     [TestMethod]
+    public void PlayerPresentation_WrapEntersFromOppositeEdge()
+    {
+        PlayerPresentationViewModel player = new(new GridPosition(1, 0), 36, CreateRatManAnimator());
+        player.BeginMove(new GridPosition(1, 3), Direction.Left, wraps: true);
+        Assert.AreEqual(144d, player.Left);
+        player.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2);
+        Assert.AreEqual(126d, player.Left);
+        Assert.AreEqual(36d, player.Top);
+        Assert.IsTrue(player.Advance(PlayerPresentationViewModel.DefaultMoveDuration / 2));
+        Assert.AreEqual(108d, player.Left);
+    }
+
+    [TestMethod]
     public void Metadata_WhenValuesAreInvalid_Throws()
     {
         Assert.ThrowsException<ArgumentOutOfRangeException>(

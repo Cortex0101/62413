@@ -25,6 +25,10 @@ public sealed class GameViewModel : ScreenViewModel
         Player.PropertyChanged += OnPlayerPropertyChanged;
         BoardCells = BoardProjection.Cells(gameSession.BoardSize);
         WallSegments = BoardProjection.Segments(gameSession.Walls);
+        RenderedWalls = WallSegments.Concat(BoardProjection.Borders(gameSession.BoardSize,
+            gameSession.OpenBorderRows, gameSession.OpenBorderColumns)).ToArray();
+        BoardProjection.UpdateBlocked(BoardCells, gameSession.BoardSize, gameSession.Walls,
+            gameSession.Player.Position, gameSession.OpenBorderRows, gameSession.OpenBorderColumns);
         MoveCommand = new RelayCommand(Move);
         ReturnToMenuCommand = new RelayCommand(_ => returnToMenu());
     }
@@ -34,6 +38,7 @@ public sealed class GameViewModel : ScreenViewModel
     public string MapWarnings { get; init; } = "";
 
     public IReadOnlyList<WallSegmentViewModel> WallSegments { get; }
+    public IReadOnlyList<WallSegmentViewModel> RenderedWalls { get; }
 
     public bool HasMonsterSpawn => gameSession.MonsterStartingPosition.HasValue;
     public double MonsterLeft => (gameSession.MonsterStartingPosition?.Column ?? 0) * CellSize;
@@ -114,12 +119,13 @@ public sealed class GameViewModel : ScreenViewModel
 
     private bool TryStartMove(Direction direction)
     {
+        bool wraps = !gameSession.BoardSize.Contains(gameSession.Player.Position.AdjacentTo(direction));
         if (!gameSession.TryMovePlayer(direction))
         {
             return false;
         }
 
-        Player.BeginMove(gameSession.Player.Position, direction);
+        Player.BeginMove(gameSession.Player.Position, direction, wraps);
         OnPropertyChanged(nameof(PlayerPosition));
         return true;
     }

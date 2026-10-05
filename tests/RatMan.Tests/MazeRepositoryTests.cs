@@ -19,6 +19,20 @@ public sealed class MazeRepositoryTests
     public void Cleanup() { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
 
     [TestMethod]
+    public void BorderOpenings_RoundTripAndRejectOutOfRangeIndices()
+    {
+        var maze = TestMazes.Sample with { OpenBorderRows = [0, 2], OpenBorderColumns = [1] };
+        string path = repository.GetNewPath("Tunnels");
+        repository.Save(path, maze);
+        var loaded = repository.Load(path);
+        CollectionAssert.AreEquivalent(new[] { 0, 2 }, loaded.OpenBorderRows.ToArray());
+        CollectionAssert.AreEquivalent(new[] { 1 }, loaded.OpenBorderColumns.ToArray());
+        Assert.IsTrue((maze with { OpenBorderRows = [-1] }).Validate().Count > 0);
+        Assert.IsTrue((maze with { OpenBorderColumns = [maze.Size.Columns] }).Validate().Count > 0);
+        Assert.AreEqual(0, repository.Load(repository.List().Single(e => e.Name == "Classic").FilePath).OpenBorderRows.Count);
+    }
+
+    [TestMethod]
     public void FirstUse_SeedsExactCurrentLayoutAndDoesNotRestoreDeletedMap()
     {
         MazeEntry entry = repository.List().Single(); MazeDefinition maze = repository.Load(entry.FilePath);

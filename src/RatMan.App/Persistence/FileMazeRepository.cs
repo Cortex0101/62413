@@ -79,7 +79,8 @@ public sealed class FileMazeRepository : IMazeRepository
                 throw new InvalidDataException("Every wall must be inside the board.");
             MazeDefinition maze = new(file.Name ?? "", size,
                 file.Walls.Select(w => new Wall(w.FirstTile.ToPosition(), w.SecondTile.ToPosition())).ToHashSet(),
-                file.PlayerSpawn?.ToPosition(), file.MonsterSpawn?.ToPosition());
+                file.PlayerSpawn?.ToPosition(), file.MonsterSpawn?.ToPosition())
+            { OpenBorderRows = file.OpenBorderRows ?? [], OpenBorderColumns = file.OpenBorderColumns ?? [] };
             IReadOnlyList<string> errors = maze.Validate();
             if (errors.Count > 0) throw new InvalidDataException(string.Join(" ", errors));
             return maze;
@@ -115,6 +116,8 @@ public sealed class FileMazeRepository : IMazeRepository
         Initialize();
         MazeFile file = new()
         {
+            OpenBorderRows = maze.OpenBorderRows.Order().ToArray(),
+            OpenBorderColumns = maze.OpenBorderColumns.Order().ToArray(),
             Version = 1, Name = maze.Name.Trim(), Width = maze.Size.Columns, Height = maze.Size.Rows,
             PlayerSpawn = Coordinate.From(maze.PlayerSpawn!.Value),
             MonsterSpawn = Coordinate.From(maze.MonsterSpawn!.Value),
@@ -139,6 +142,8 @@ public sealed class FileMazeRepository : IMazeRepository
 
     private sealed class MazeFile
     {
+        public int[]? OpenBorderRows { get; set; }
+        public int[]? OpenBorderColumns { get; set; }
         public int Version { get; set; }
         public string? Name { get; set; }
         public int Width { get; set; }

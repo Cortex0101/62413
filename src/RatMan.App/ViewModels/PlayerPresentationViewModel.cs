@@ -84,7 +84,7 @@ public sealed class PlayerPresentationViewModel : ObservableObject
 
     public ImageSource CurrentImage => animator.CurrentImage;
 
-    public void BeginMove(GridPosition targetPosition, Direction direction)
+    public void BeginMove(GridPosition targetPosition, Direction direction, bool wraps = false)
     {
         if (IsBusy)
         {
@@ -96,6 +96,17 @@ public sealed class PlayerPresentationViewModel : ObservableObject
         originTop = Top;
         targetLeft = targetPosition.Column * cellSize;
         targetTop = targetPosition.Row * cellSize;
+        if (wraps)
+        {
+            // Enter from just outside the opposite edge instead of sliding across the board.
+            GridPosition entry = targetPosition.AdjacentTo(direction switch
+            {
+                Direction.Left => Direction.Right, Direction.Right => Direction.Left,
+                Direction.Up => Direction.Down, _ => Direction.Up
+            });
+            originLeft = Left = entry.Column * cellSize;
+            originTop = Top = entry.Row * cellSize;
+        }
         moveElapsedMilliseconds = 0;
         SetAnimation(PlayerAnimationState.Walking, restart: true);
     }

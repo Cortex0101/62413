@@ -13,6 +13,7 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
     private readonly IMazeRepository repository;
     private readonly IEditorDialogs dialogs;
     private readonly HashSet<Wall> walls = [];
+    private readonly HashSet<int> openRows = [], openColumns = [];
     private BoardSize size = new(11, 12);
     private string name = "", widthInput = "12", heightInput = "11", status = "";
     private GridPosition? playerSpawn, monsterSpawn;
@@ -64,6 +65,7 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
     };
     public IReadOnlyList<BoardCellViewModel> BoardCells => boardCells ??= BoardProjection.Cells(size);
     public IReadOnlyList<WallSegmentViewModel> WallSegments => BoardProjection.Segments(walls);
+    public IReadOnlyList<WallSegmentViewModel> RenderedWalls => WallSegments.Concat(BoardProjection.Borders(size, openRows, openColumns)).ToArray();
     public double BoardWidth => size.Columns * BoardProjection.CellSize;
     public double BoardHeight => size.Rows * BoardProjection.CellSize;
     public GridPosition? PlayerSpawn => playerSpawn;
@@ -80,7 +82,8 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
     public double PreviewTop => (previewCell?.Row ?? 0) * BoardProjection.CellSize;
     public string PreviewLabel => SelectedTool == BuilderTool.Player ? "P" : "M";
 
-    public MazeDefinition Definition => new(name, size, walls.ToArray(), playerSpawn, monsterSpawn);
+    public MazeDefinition Definition => new(name, size, walls.ToArray(), playerSpawn, monsterSpawn)
+    { OpenBorderRows = openRows.ToArray(), OpenBorderColumns = openColumns.ToArray() };
 
     private void Changed()
     {
@@ -109,7 +112,7 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
         }
         BoardSize next = new(height, width);
         if (next == size) return true;
-        bool crops = walls.Any(w => !next.Contains(w.FirstTile) || !next.Contains(w.SecondTile)) ||
+        bool crops = openRows.Any(row => row >= next.Rows) || openColumns.Any(column => column >= next.Columns) || walls.Any(w => !next.Contains(w.FirstTile) || !next.Contains(w.SecondTile)) ||
             playerSpawn is { } p && !next.Contains(p) || monsterSpawn is { } m && !next.Contains(m);
         if (crops && !dialogs.ConfirmCrop())
         {
@@ -118,6 +121,8 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
             return false;
         }
         size = next;
+        openRows.RemoveWhere(row => row >= size.Rows);
+        openColumns.RemoveWhere(column => column >= size.Columns);
         boardCells = null;
         walls.RemoveWhere(w => !size.Contains(w.FirstTile) || !size.Contains(w.SecondTile));
         if (playerSpawn is { } player && !size.Contains(player)) playerSpawn = null;
@@ -138,13 +143,13 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
     public Wall? WallAt(double x, double y, bool verticalWall)
     {
         const double cell = BoardProjection.CellSize;
-        if (x < 0 || y < 0 || x >= BoardWidth || y >= BoardHeight) return null;
-        int column = (int)(x / cell), row = (int)(y / cell);
+        if (x < 0 || y < 0 || x > BoardWidth || y > BoardHeight) return null;
+        int column = Math.Min((int)(x / cell), size.Columns - 1), row = Math.Min((int)(y / cell), size.Rows - 1);
         int boundary = (int)Math.Round((verticalWall ? x : y) / cell, MidpointRounding.AwayFromZero);
         if (Math.Abs((verticalWall ? x : y) - boundary * cell) > 8) return null;
         if (verticalWall)
-            return boundary > 0 && boundary < size.Columns ? new Wall(new(row, boundary - 1), new(row, boundary)) : null;
-        return boundary > 0 && boundary < size.Rows ? new Wall(new(boundary - 1, column), new(boundary, column)) : null;
+            return boundary >= 0 && boundary <= size.Columns ? new Wall(new(row, boundary - 1), new(row, boundary)) : null;
+        return boundary >= 0 && boundary <= size.Rows ? new Wall(new(boundary - 1, column), new(boundary, column)) : null;
     }
 
     private GridPosition? CellAt(double x, double y) =>
@@ -170,7 +175,7 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
         bool changed = false;
         if (SelectedTool == BuilderTool.Wall)
         {
-            if (WallAt(x, y, vertical) is { } wall) changed = walls.Add(wall);
+            if (WallAt(x, y, vertical) is { } wall) changed = SetWall(wall, true);
         }
         else if (CellAt(x, y) is { } cell)
         {
@@ -183,11 +188,11 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
     public void Remove(double x, double y)
     {
         Wall? horizontal = WallAt(x, y, false), upright = WallAt(x, y, true);
-        Wall? candidate = new[] { horizontal, upright }.Where(w => w.HasValue && walls.Contains(w.Value))
+        Wall? candidate = new[] { horizontal, upright }.Where(w => w.HasValue && HasWall(w.Value))
             .OrderBy(w => w!.Value.FirstTile.Row == w.Value.SecondTile.Row
                 ? Math.Abs(x - w.Value.SecondTile.Column * BoardProjection.CellSize)
                 : Math.Abs(y - w.Value.SecondTile.Row * BoardProjection.CellSize)).FirstOrDefault();
-        bool changed = candidate is { } wall && walls.Remove(wall);
+        bool changed = candidate is { } wall && SetWall(wall, false);
         if (!changed && CellAt(x, y) is { } cell)
         {
             if (playerSpawn == cell) { playerSpawn = null; changed = true; }
@@ -195,6 +200,20 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
         }
         if (changed) { Changed(); RefreshBoard(); }
     }
+
+    private HashSet<int>? BorderOpenings(Wall wall) =>
+        wall.FirstTile.Column < 0 || wall.SecondTile.Column >= size.Columns ? openRows :
+        wall.FirstTile.Row < 0 || wall.SecondTile.Row >= size.Rows ? openColumns : null;
+
+    private int BorderIndex(Wall wall) => wall.FirstTile.Row == wall.SecondTile.Row
+        ? wall.FirstTile.Row : wall.FirstTile.Column;
+
+    private bool HasWall(Wall wall) => BorderOpenings(wall) is { } openings
+        ? !openings.Contains(BorderIndex(wall)) : walls.Contains(wall);
+
+    private bool SetWall(Wall wall, bool present) => BorderOpenings(wall) is { } openings
+        ? present ? openings.Remove(BorderIndex(wall)) : openings.Add(BorderIndex(wall))
+        : present ? walls.Add(wall) : walls.Remove(wall);
 
     public bool Save()
     {
@@ -223,6 +242,8 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
     public void Load(MazeDefinition maze, string path)
     {
         size = maze.Size; name = maze.Name; playerSpawn = maze.PlayerSpawn; monsterSpawn = maze.MonsterSpawn;
+        openRows.Clear(); openRows.UnionWith(maze.OpenBorderRows);
+        openColumns.Clear(); openColumns.UnionWith(maze.OpenBorderColumns);
         walls.Clear(); walls.UnionWith(maze.Walls); filePath = path;
         ResetPresentation();
         Status = "Board loaded";
@@ -230,7 +251,7 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
 
     private void Reset()
     {
-        size = new(11, 12); name = ""; playerSpawn = null; monsterSpawn = null; walls.Clear(); filePath = null;
+        size = new(11, 12); name = ""; playerSpawn = null; monsterSpawn = null; walls.Clear(); openRows.Clear(); openColumns.Clear(); filePath = null;
         ResetPresentation(); Status = "Choose a tool and click the board to begin.";
     }
 
@@ -245,6 +266,8 @@ public sealed class BoardBuilderViewModel : ScreenViewModel
 
     private void RefreshBoard()
     {
+        BoardProjection.UpdateBlocked(BoardCells, size, walls, playerSpawn, openRows, openColumns);
+        OnPropertyChanged(nameof(RenderedWalls));
         foreach (string property in new[] { nameof(Size), nameof(BoardCells), nameof(WallSegments), nameof(BoardWidth), nameof(BoardHeight), nameof(PlayerSpawn), nameof(MonsterSpawn), nameof(HasPlayerSpawn), nameof(HasMonsterSpawn), nameof(PlayerLeft), nameof(PlayerTop), nameof(MonsterLeft), nameof(MonsterTop) }) OnPropertyChanged(property);
     }
 }
