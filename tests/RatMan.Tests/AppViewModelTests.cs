@@ -16,13 +16,14 @@ public sealed class AppViewModelTests
     }
 
     [TestMethod]
-    public void MenuCommands_NavigateToPlaceholdersAndBack()
+    public async Task MenuCommands_NavigateToHighScoresAndBack()
     {
-        MainViewModel viewModel = new(repository: new MemoryMazeRepository(TestMazes.Sample));
+        MainViewModel viewModel = new(repository: new MemoryMazeRepository(TestMazes.Sample), highScores: new MemoryHighScoreRepository());
         MainMenuViewModel menu = (MainMenuViewModel)viewModel.ActiveScreen;
 
         menu.HighScoresCommand.Execute(null);
-        PlaceholderViewModel placeholder = (PlaceholderViewModel)viewModel.ActiveScreen;
+        HighScoresViewModel placeholder = (HighScoresViewModel)viewModel.ActiveScreen;
+        await placeholder.Loading;
 
         Assert.AreEqual("High Scores", placeholder.Title);
 

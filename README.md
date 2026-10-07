@@ -18,8 +18,9 @@ The current game includes:
 - Normal and animated steroid cheese, editor food tools, and a live per-game score.
 - Distinct cat targets, cheese-based releases, steroid scatter, edible cats, and harmless return-home movement.
 - Three lives, a power timer, cat status indicators, victory/Game Over overlays, and replay.
+- Persistent top-10 high scores for each map layout, with optional player names.
 
-Persistent high scores, settings, and additional levels remain scheduled for later milestones. Game rules run in the WPF-independent engine using a deterministic 10 ms simulation step.
+Settings and additional levels remain scheduled for later milestones. Game rules run in the WPF-independent engine using a deterministic 10 ms simulation step.
 
 ## Prerequisites
 
@@ -72,7 +73,19 @@ The game view restores keyboard focus when opened. The player keeps moving until
 
 Every tile reachable from the player starts with normal cheese, except the player's starting tile and tiles cleared in the editor. Normal cheese randomly uses one of four appearances, stable throughout that game, and awards **1 point**. Animated steroid cheese replaces normal cheese and awards **5 points**, powers up Ratman, and sends active cats into scatter for **10 seconds**. Another steroid refreshes that timer.
 
-Food disappears and the score increases when the mouse finishes entering the tile, including after a tunnel wrap. Each cheese can be collected only once. Eating a scared cat awards **20 points**. Collecting all cheese wins the round. New games and Replay restore the map's food and reset the score to **0**; scores are not saved between games.
+Food disappears and the score increases when the mouse finishes entering the tile, including after a tunnel wrap. Each cheese can be collected only once. Eating a scared cat awards **20 points**. Collecting all cheese wins the round. New games and Replay restore the map's food and reset the current score to **0**; qualifying final scores can be saved to the leaderboard.
+
+## High scores
+
+After victory or Game Over, a score that reaches its layout's **top 10** opens a name-entry dialog. Enter an optional name (up to 24 characters), then choose **Save Score** or press Enter. A blank name saves as **Anonymous**. **Skip**, Escape, or closing the dialog discards the entry. Leaving an unfinished game does not submit a score. Each replay is a separate run.
+
+Scores rank highest first, with previously saved entries winning ties. Matching the tenth-place score does not qualify; zero points can qualify while the board has fewer than ten entries. Multiple runs can use the same name.
+
+Open **High Scores** from the main menu or the finished-game screen. The layout selector includes current maps and historical layouts with saved scores, with dimensions and last-played dates to help distinguish them. The most recently played layout is selected in the current app session; after restarting, the layout with the latest saved completion is selected.
+
+Leaderboards are identified by dimensions, spawn positions, walls, tunnels, and effective starting food. Renaming or copying a map keeps its scores, while changing its layout creates a separate leaderboard. Restoring an earlier layout reconnects its scores. Cosmetic cheese appearances and hidden food overrides do not affect identity.
+
+Scores live in `%LOCALAPPDATA%\RatMan\highscores.json`, a versioned JSON file shared across builds. Saves are asynchronous and replace the file atomically. Failed reads leave existing files unchanged and offer Refresh or Retry High Score. Failed saves keep the dialog and entered name available for another attempt or Skip. Unsupported or damaged files are reported without being overwritten; repair or move the affected file, then retry. Existing `.maze` files require no migration.
 
 ## Cats and lives
 

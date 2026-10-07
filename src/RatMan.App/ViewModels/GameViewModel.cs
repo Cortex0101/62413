@@ -14,8 +14,11 @@ public sealed class GameViewModel : ScreenViewModel
     private string powerText = "", cheeseText = "", playerPosition = "";
     private RoundStatus status;
     private string mapWarnings = "";
+    private bool completionNotified, highScoreBusy, highScoreError;
+    private string highScoreStatus = "";
 
-    public GameViewModel(Action returnToMenu, GameSession session) : base(session.Name)
+    public GameViewModel(Action returnToMenu, GameSession session, Action? showHighScores = null,
+        Func<Task>? retryHighScore = null) : base(session.Name)
     {
         gameSession = session;
         Food.Refresh(session.RemainingFood);
@@ -41,15 +44,24 @@ public sealed class GameViewModel : ScreenViewModel
         });
         ReplayCommand = new RelayCommand(_ =>
         {
-            if (!session.IsFinished) return;
+            if (!session.IsFinished || IsHighScoreBusy) return;
+            completionNotified = false;
+            HighScoreStatus = "";
+            HasHighScoreError = false;
             session.Restart();
             Player.ResetAnimation();
             foreach (var cat in Cats) cat.ResetAnimation();
             Food.Reset();
             Food.Refresh(session.RemainingFood);
             Synchronize(TimeSpan.Zero);
-        }, _ => session.IsFinished);
-        ReturnToMenuCommand = new RelayCommand(_ => returnToMenu());
+        }, _ => session.IsFinished && !IsHighScoreBusy);
+        ReturnToMenuCommand = new RelayCommand(_ => { if (!IsHighScoreBusy) returnToMenu(); }, _ => !IsHighScoreBusy);
+        ShowHighScoresCommand = new RelayCommand(_ =>
+        {
+            if (IsFinished && !IsHighScoreBusy) showHighScores?.Invoke();
+        }, _ => IsFinished && !IsHighScoreBusy && showHighScores is not null);
+        RetryHighScoreCommand = new AsyncRelayCommand(retryHighScore ?? (() => Task.CompletedTask),
+            () => HasHighScoreError && !IsHighScoreBusy && retryHighScore is not null);
         Synchronize(TimeSpan.Zero);
     }
 
@@ -81,8 +93,30 @@ public sealed class GameViewModel : ScreenViewModel
     public double PlayerTop => Player.Top;
     public ImageSource PlayerImage => Player.CurrentImage;
     public ICommand MoveCommand { get; }
-    public ICommand ReturnToMenuCommand { get; }
+    public RelayCommand ReturnToMenuCommand { get; }
     public RelayCommand ReplayCommand { get; }
+    public RelayCommand ShowHighScoresCommand { get; }
+    public AsyncRelayCommand RetryHighScoreCommand { get; }
+    public event Action<CompletedRound>? RoundCompleted;
+    public Task HighScoreCompletion { get; internal set; } = Task.CompletedTask;
+    public string HighScoreStatus { get => highScoreStatus; internal set => SetProperty(ref highScoreStatus, value); }
+    public bool HasHighScoreError
+    {
+        get => highScoreError;
+        internal set { SetProperty(ref highScoreError, value); RetryHighScoreCommand.RaiseCanExecuteChanged(); }
+    }
+    public bool IsHighScoreBusy
+    {
+        get => highScoreBusy;
+        internal set
+        {
+            SetProperty(ref highScoreBusy, value);
+            ReplayCommand.RaiseCanExecuteChanged();
+            ReturnToMenuCommand.RaiseCanExecuteChanged();
+            ShowHighScoresCommand.RaiseCanExecuteChanged();
+            RetryHighScoreCommand.RaiseCanExecuteChanged();
+        }
+    }
 
     public void Advance(TimeSpan elapsed)
     {
@@ -113,6 +147,14 @@ public sealed class GameViewModel : ScreenViewModel
             OnPropertyChanged(nameof(OutcomeTitle));
             OnPropertyChanged(nameof(OutcomeMessage));
             ReplayCommand.RaiseCanExecuteChanged();
+            ShowHighScoresCommand.RaiseCanExecuteChanged();
+        }
+        if (IsFinished && !completionNotified)
+        {
+            completionNotified = true;
+            RoundCompleted?.Invoke(new(Guid.NewGuid(), Score, DateTimeOffset.UtcNow, status));
         }
     }
 }
+
+public sealed record CompletedRound(Guid Id, int Score, DateTimeOffset CompletedAt, RoundStatus Outcome);

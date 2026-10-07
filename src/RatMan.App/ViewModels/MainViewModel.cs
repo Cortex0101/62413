@@ -11,18 +11,19 @@ public sealed class MainViewModel : ObservableObject
     private readonly MainMenuViewModel mainMenu;
     private readonly IMazeRepository repository;
     private readonly IEditorDialogs dialogs;
-    private readonly PlaceholderViewModel highScores;
+    private readonly IHighScoreRepository highScores;
+    private readonly IHighScoreDialogs highScoreDialogs;
+    private HighScoreLayout? lastPlayedLayout;
     private readonly PlaceholderViewModel settings;
     private readonly PlaceholderViewModel about;
 
-    public MainViewModel(Action? exit = null, IMazeRepository? repository = null, IEditorDialogs? dialogs = null)
+    public MainViewModel(Action? exit = null, IMazeRepository? repository = null, IEditorDialogs? dialogs = null,
+        IHighScoreRepository? highScores = null, IHighScoreDialogs? highScoreDialogs = null)
     {
         this.repository = repository ?? new FileMazeRepository();
         this.dialogs = dialogs ?? new EditorDialogs();
-        highScores = new PlaceholderViewModel(
-            "High Scores",
-            "Score persistence arrives in Week 10.",
-            ShowMainMenu);
+        this.highScores = highScores ?? new FileHighScoreRepository();
+        this.highScoreDialogs = highScoreDialogs ?? new HighScoreDialogs();
         settings = new PlaceholderViewModel(
             "Settings",
             "Configurable game options arrive in a later iteration.",
@@ -34,7 +35,7 @@ public sealed class MainViewModel : ObservableObject
         mainMenu = new MainMenuViewModel(
             ShowGame,
             ShowBuilder,
-            () => ActiveScreen = highScores,
+            () => ShowHighScores(lastPlayedLayout),
             () => ActiveScreen = settings,
             () => ActiveScreen = about,
             exit ?? (() => { }));
@@ -51,7 +52,7 @@ public sealed class MainViewModel : ObservableObject
     {
         string warnings = "";
         MapSelectionViewModel selection = new("Choose a Map", repository,
-            (maze, _) => ActiveScreen = new GameViewModel(ShowMainMenu, new GameSession(maze)) { MapWarnings = warnings },
+            (maze, _) => StartGame(maze, warnings),
             ShowMainMenu, ShowBuilder);
         ActiveScreen = selection;
         MazeEntry[] playable = selection.Maps.Where(map => map.IsValid).ToArray();
@@ -59,6 +60,55 @@ public sealed class MainViewModel : ObservableObject
         if (playable.Length == 1)
             selection.SelectCommand.Execute(playable[0]);
     }
+
+    private void StartGame(MazeDefinition maze, string warnings)
+    {
+        var layout = HighScoreLayout.FromMaze(maze);
+        lastPlayedLayout = layout;
+        CompletedRound? completed = null;
+        GameViewModel? game = null;
+        game = new GameViewModel(ShowMainMenu, new GameSession(maze), () => ShowHighScores(layout),
+            () => completed is null ? Task.CompletedTask : CheckHighScoreAsync(game!, layout, completed)) { MapWarnings = warnings };
+        game.RoundCompleted += result =>
+        {
+            completed = result;
+            game.HighScoreCompletion = CheckHighScoreAsync(game, layout, result);
+        };
+        ActiveScreen = game;
+    }
+
+    private async Task CheckHighScoreAsync(GameViewModel game, HighScoreLayout layout, CompletedRound result)
+    {
+        if (game.IsHighScoreBusy || !ReferenceEquals(ActiveScreen, game)) return;
+        game.IsHighScoreBusy = true;
+        game.HasHighScoreError = false;
+        game.HighScoreStatus = "Checking high scores…";
+        try
+        {
+            var boards = await highScores.LoadAsync();
+            var entries = boards.FirstOrDefault(b => b.Layout.Id == layout.Id)?.Entries ?? [];
+            int? rank = HighScoreRules.QualifyingRank(entries, result.Score);
+            if (rank is null)
+            {
+                game.HighScoreStatus = "This score did not reach the top 10.";
+                return;
+            }
+            if (!ReferenceEquals(ActiveScreen, game)) return;
+            var entry = new HighScoreEntryViewModel(highScores, layout,
+                new(result.Id, "", result.Score, result.CompletedAt), rank.Value);
+            await highScoreDialogs.ShowAsync(entry);
+            game.HighScoreStatus = entry.Saved ? "Your high score was saved!" : "Score not saved.";
+        }
+        catch (Exception exception) when (FileHighScoreRepository.IsStorageError(exception))
+        {
+            game.HasHighScoreError = true;
+            game.HighScoreStatus = "Could not check high scores. Retry or continue without saving. " + exception.Message;
+        }
+        finally { game.IsHighScoreBusy = false; }
+    }
+
+    private void ShowHighScores(HighScoreLayout? layout) =>
+        ActiveScreen = new HighScoresViewModel(highScores, repository, ShowMainMenu, layout);
 
     private void ShowBuilder()
     {

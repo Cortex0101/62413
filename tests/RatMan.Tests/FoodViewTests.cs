@@ -55,6 +55,7 @@ public sealed class FoodViewTests
                 Assert.IsTrue(Descendants(gameView).OfType<TextBlock>().Any(text => text.Text == "5"));
                 VerifyClockLifecycle(gameView);
                 GhostPresentationTests.VerifyAndRender();
+                HighScoreViewTests.VerifyAndRender();
 
                 var editor = new BoardBuilderViewModel(new MemoryMazeRepository(), new TestEditorDialogs(), () => { }, () => { });
                 editor.Load(maze, "preview.maze");

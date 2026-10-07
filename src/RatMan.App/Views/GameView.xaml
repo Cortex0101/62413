@@ -204,7 +204,13 @@
                 <TextBlock Text="{Binding OutcomeTitle}" FontSize="38" FontWeight="Bold" TextAlignment="Center"
                            Foreground="{DynamicResource AccentBrush}" />
                 <TextBlock Text="{Binding OutcomeMessage}" FontSize="20" TextAlignment="Center" TextWrapping="Wrap" Margin="0,16,0,24" />
+                <TextBlock Text="{Binding HighScoreStatus}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,16"
+                           AutomationProperties.LiveSetting="Polite" />
+                <Button Content="Retry High Score" Command="{Binding RetryHighScoreCommand}" Margin="0,0,0,10"
+                        Visibility="{Binding HasHighScoreError, Converter={StaticResource BoolVisibility}}" />
                 <Button Content="Replay" Command="{Binding ReplayCommand}" Focusable="False" Padding="20,12" Margin="0,0,0,10"
+                        Visibility="{Binding IsFinished, Converter={StaticResource BoolVisibility}}" />
+                <Button Content="High Scores" Command="{Binding ShowHighScoresCommand}" Padding="20,12" Margin="0,0,0,10"
                         Visibility="{Binding IsFinished, Converter={StaticResource BoolVisibility}}" />
                 <Button Content="Return to Menu" Command="{Binding ReturnToMenuCommand}" Padding="20,12" Focusable="False" />
             </StackPanel>
