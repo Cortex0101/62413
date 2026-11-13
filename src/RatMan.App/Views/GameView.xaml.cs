@@ -31,4 +31,10 @@ public partial class GameView : UserControl
         renderingClock?.Dispose();
         renderingClock = null;
     }
+
+    private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (Keyboard.Modifiers == ModifierKeys.None && DataContext is GameViewModel viewModel)
+            e.Handled = viewModel.TryMove(e.Key);
+    }
 }

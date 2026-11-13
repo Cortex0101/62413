@@ -56,6 +56,7 @@ public sealed class FoodViewTests
                 VerifyClockLifecycle(gameView);
                 GhostPresentationTests.VerifyAndRender();
                 HighScoreViewTests.VerifyAndRender();
+                SettingsTests.VerifyAndRender();
 
                 var editor = new BoardBuilderViewModel(new MemoryMazeRepository(), new TestEditorDialogs(), () => { }, () => { });
                 editor.Load(maze, "preview.maze");

@@ -14,20 +14,18 @@ public sealed class MainViewModel : ObservableObject
     private readonly IHighScoreRepository highScores;
     private readonly IHighScoreDialogs highScoreDialogs;
     private HighScoreLayout? lastPlayedLayout;
-    private readonly PlaceholderViewModel settings;
+    private readonly SettingsViewModel settings;
     private readonly PlaceholderViewModel about;
 
     public MainViewModel(Action? exit = null, IMazeRepository? repository = null, IEditorDialogs? dialogs = null,
-        IHighScoreRepository? highScores = null, IHighScoreDialogs? highScoreDialogs = null)
+        IHighScoreRepository? highScores = null, IHighScoreDialogs? highScoreDialogs = null,
+        ISettingsRepository? settingsRepository = null)
     {
         this.repository = repository ?? new FileMazeRepository();
         this.dialogs = dialogs ?? new EditorDialogs();
         this.highScores = highScores ?? new FileHighScoreRepository();
         this.highScoreDialogs = highScoreDialogs ?? new HighScoreDialogs();
-        settings = new PlaceholderViewModel(
-            "Settings",
-            "Configurable game options arrive in a later iteration.",
-            ShowMainMenu);
+        settings = new SettingsViewModel(settingsRepository ?? new FileSettingsRepository(), ShowMainMenu);
         about = new PlaceholderViewModel(
             "About RatMan",
             "A maze-chase course project built with C#, .NET 10, WPF, and MVVM.",
@@ -47,6 +45,8 @@ public sealed class MainViewModel : ObservableObject
         get => activeScreen;
         private set => SetProperty(ref activeScreen, value);
     }
+
+    internal Task SettingsLoaded => settings.Loading;
 
     private void ShowGame()
     {
@@ -68,7 +68,8 @@ public sealed class MainViewModel : ObservableObject
         CompletedRound? completed = null;
         GameViewModel? game = null;
         game = new GameViewModel(ShowMainMenu, new GameSession(maze), () => ShowHighScores(layout),
-            () => completed is null ? Task.CompletedTask : CheckHighScoreAsync(game!, layout, completed)) { MapWarnings = warnings };
+            () => completed is null ? Task.CompletedTask : CheckHighScoreAsync(game!, layout, completed),
+            settings.Rows.Select(row => row.Binding).ToArray()) { MapWarnings = warnings };
         game.RoundCompleted += result =>
         {
             completed = result;

@@ -18,9 +18,10 @@ public sealed class GameViewModel : ScreenViewModel
     private string highScoreStatus = "";
 
     public GameViewModel(Action returnToMenu, GameSession session, Action? showHighScores = null,
-        Func<Task>? retryHighScore = null) : base(session.Name)
+        Func<Task>? retryHighScore = null, IReadOnlyList<MovementBinding>? movementBindings = null) : base(session.Name)
     {
         gameSession = session;
+        MovementBindings = movementBindings ?? MovementBinding.Defaults;
         Food.Refresh(session.RemainingFood);
         Player = new(session.Player, CellSize);
         Player.PropertyChanged += (_, e) =>
@@ -71,6 +72,7 @@ public sealed class GameViewModel : ScreenViewModel
     public FoodPresentationViewModel Food { get; } = new();
     public PlayerPresentationViewModel Player { get; }
     public IReadOnlyList<CatPresentationViewModel> Cats { get; }
+    public IReadOnlyList<MovementBinding> MovementBindings { get; }
     public int Score { get => score; private set => SetProperty(ref score, value); }
     public int Lives { get => lives; private set => SetProperty(ref lives, value); }
     public string PowerText { get => powerText; private set => SetProperty(ref powerText, value); }
@@ -125,6 +127,20 @@ public sealed class GameViewModel : ScreenViewModel
         gameSession.Advance(elapsed);
         if (gameSession.Status == RoundStatus.Playing) Food.Advance(elapsed);
         Synchronize(gameSession.Status == RoundStatus.Playing ? elapsed : TimeSpan.Zero);
+    }
+
+    internal bool TryMove(Key key)
+    {
+        if (IsFinished) return false;
+
+        foreach (MovementBinding binding in MovementBindings)
+        {
+            if (key != binding.FirstKey && key != binding.SecondKey) continue;
+            MoveCommand.Execute(binding.Direction);
+            return true;
+        }
+
+        return false;
     }
 
     private void Synchronize(TimeSpan elapsed)

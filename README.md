@@ -8,11 +8,10 @@ The current game includes:
 
 - A main-window shell with view-model-first navigation.
 - Main menu commands for play, board building, high scores, settings, about, and exit.
-- Placeholder screens for features scheduled in later weeks.
 - A retained-mode Canvas showing the selected maze, animated Ratman, and four animated cats.
 - A board builder with editable dimensions, boundary walls, and player/monster spawns.
 - Versioned `.maze` files and map selection when multiple saved boards are available.
-- Arrow-key and WASD movement with board-boundary enforcement.
+- Two configurable keyboard bindings per movement direction, with WASD and arrow keys as defaults.
 - Shared WPF colors, brushes, dimensions, typography, and control styles.
 - Automated engine and application view-model tests.
 - Normal and animated steroid cheese, editor food tools, and a live per-game score.
@@ -20,7 +19,7 @@ The current game includes:
 - Three lives, a power timer, cat status indicators, victory/Game Over overlays, and replay.
 - Persistent top-10 high scores for each map layout, with optional player names.
 
-Settings and additional levels remain scheduled for later milestones. Game rules run in the WPF-independent engine using a deterministic 10 ms simulation step.
+Game rules run in the WPF-independent engine using a deterministic 10 ms simulation step.
 
 ## Prerequisites
 
@@ -63,9 +62,11 @@ dotnet run --project .\src\RatMan.App\RatMan.App.csproj
 
 | Input | Action |
 | --- | --- |
-| Arrow keys | Start moving or request a turn. |
-| W, A, S, D | Start moving or request a turn. |
+| Arrow keys (default) | Start moving or request a turn. |
+| W, A, S, D (default) | Start moving or request a turn. |
 | Escape | Return from the game to the main menu. |
+
+Open **Settings** and select either binding beside a movement action, then press the new key. Press Escape to cancel. Selecting a key already in use swaps the two bindings. Changes are saved automatically in `%LOCALAPPDATA%\RatMan\settings.json`.
 
 The game view restores keyboard focus when opened. The player keeps moving until a wall or board edge blocks the current direction. A blocked turn waits until the first opening without changing the player's facing direction or interrupting movement. The latest direction input replaces any pending turn.
 
