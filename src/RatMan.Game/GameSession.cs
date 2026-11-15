@@ -151,7 +151,7 @@ public sealed class GameSession
 
     public void Advance(TimeSpan elapsed)
     {
-        if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
+        ArgumentOutOfRangeException.ThrowIfLessThan(elapsed, TimeSpan.Zero);
         if (IsFinished) return;
         accumulatedTicks = checked(accumulatedTicks + elapsed.Ticks);
         while (accumulatedTicks >= GameRules.SimulationStep.Ticks && !IsFinished)
