@@ -1,0 +1,12 @@
+\begin{tikzpicture}
+  \node[ratman box] (tests) at (0,1.45)
+    {\textbf{\code{RatMan.Tests}}\\MSTest suite};
+  \node[ratman box] (app) at (-3.65,-1.05)
+    {\textbf{\code{RatMan.App}}\\\mbox{Windows WPF application}};
+  \node[ratman box] (engine) at (3.65,-1.05)
+    {\textbf{\code{RatMan.Game}}\\WPF-independent library};
+
+  \draw[ratman arrow] (tests.south west) -- (app.north);
+  \draw[ratman arrow] (tests.south east) -- (engine.north);
+  \draw[ratman arrow] (app.east) -- (engine.west);
+\end{tikzpicture}

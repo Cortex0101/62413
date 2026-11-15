@@ -1,0 +1,31 @@
+\begingroup
+\newcommand{\reachabilityboard}[2]{%
+  \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}
+      \path[use as bounding box] (-0.28,0) rectangle (7.90,6.03);
+      % The captures are 1046 x 913; retain the 762 x 518 board region.
+      \begin{scope}
+        \clip (0,0) rectangle (7.62,5.18);
+        \node[anchor=south west,inner sep=0] at (-0.12,-1.82)
+          {\includegraphics[width=10.46cm]{#1}};
+      \end{scope}
+      #2
+    \end{tikzpicture}}%
+}
+\begin{minipage}[t]{0.477\linewidth}
+  \centering
+  \reachabilityboard{img/fig5-closed.jpg}{}
+  \par\smallskip
+  {\sffamily\small\textbf{A. Tunnel closed}\\2 of 6 cells reachable}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.477\linewidth}
+  \centering
+  \reachabilityboard{img/fig5-open.jpg}{%
+    \draw[draw=accent,semithick,{Latex[length=2.0mm]}-{Latex[length=2.0mm]},rounded corners=4pt]
+      (0.03,3.88) -- (-0.21,3.88) -- (-0.21,5.58) --
+      node[ratman label,above] {Paired tunnel} (7.83,5.58) -- (7.83,3.88) -- (7.59,3.88);
+  }
+  \par\smallskip
+  {\sffamily\small\textbf{B. Tunnel open}\\6 of 6 cells reachable}
+\end{minipage}
+\endgroup

@@ -1,0 +1,24 @@
+\begin{tikzpicture}[
+  state/.style={ratman box, minimum width=2.55cm, minimum height=0.77cm, font=\sffamily\small\bfseries}
+]
+  \node[state] (waiting) at (0,2.2) {Waiting};
+  \node[state] (chase) at (-3.83,0.35) {Chase};
+  \node[state] (scatter) at (3.83,0.35) {Scatter};
+  \node[state] (returning) at (3.83,-2.05) {Returning home};
+  \node[state] (recovering) at (0,-3.78) {Recovering};
+
+  \draw[ratman arrow] (waiting.south west) -- (chase.north);
+  \draw[ratman arrow] (waiting.south east) -- (scatter.north);
+  \node[ratman label, align=center] at (-3.65,1.77) {Threshold met\\(power off)};
+  \node[ratman label, align=center] at (3.65,1.77) {Threshold met\\(power active)};
+
+  \draw[ratman arrow] ([yshift=2mm]chase.east) -- node[ratman label, above] {Power starts} ([yshift=2mm]scatter.west);
+  \draw[ratman arrow] ([yshift=-2mm]scatter.west) -- node[ratman label, below] {Power expires} ([yshift=-2mm]chase.east);
+  \draw[ratman arrow] (scatter.south) -- node[ratman label, right] {Contact with RatMan} (returning.north);
+
+  \draw[ratman arrow] (returning.west) -- node[ratman label, above] {Home [power off]} (-3.83,-2.05) -- (chase.south);
+  \draw[ratman arrow] (returning.south west) -- (recovering.north east);
+  \node[ratman label] at (3.55,-3.13) {Home [power active]};
+  \draw[ratman arrow] (recovering.west) -- node[ratman label, above] {Power expires} (-5.7,-3.78)
+    -- (-5.7,0.35) -- (chase.west);
+\end{tikzpicture}

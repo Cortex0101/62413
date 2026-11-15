@@ -1,0 +1,30 @@
+\begin{tikzpicture}[
+  participant/.style={ratman box, minimum width=2.85cm, minimum height=0.73cm},
+  lifeline/.style={draw=muted, densely dashed, thin},
+  phase/.style={anchor=west, fill=white, inner xsep=4pt, font=\sffamily\small\bfseries, text=accent}
+]
+  \node[participant] (view) at (0,0) {\textbf{\code{GameView}}};
+  \node[participant] (clock) at (3.35,0) {\textbf{\code{RenderingClock}}};
+  \node[participant] (vm) at (6.7,0) {\textbf{\code{GameViewModel}}};
+  \node[participant] (session) at (10.3,0) {\textbf{\code{GameSession}}};
+
+  \foreach \actor in {view,clock,vm,session}
+    \draw[lifeline] (\actor.south) -- ++(0,-7.30);
+
+  \draw[rulecolor] (-1.38,-0.78) -- (12.02,-0.78);
+  \node[phase] at (-1.28,-0.78) {Keyboard event};
+  \draw[ratman arrow] (0,-1.47) -- node[ratman label, above] {Resolve binding and execute \code{MoveCommand}} (6.7,-1.47);
+  \draw[ratman arrow] (6.7,-2.18) -- node[ratman label, above] {\code{RequestDirection(direction)}} (10.3,-2.18);
+  \draw[ratman arrow] (10.3,-2.43) -- ++(0.65,0) -- ++(0,-0.48)
+    -- node[ratman label, left, pos=1] {Store latest pending turn} (10.3,-2.91);
+
+  \draw[rulecolor] (-1.38,-3.36) -- (12.02,-3.36);
+  \node[phase] at (-1.28,-3.36) {WPF render callback};
+  \draw[ratman arrow] (3.35,-4.05) -- node[ratman label, above] {\code{Advance(capped elapsed)}} (6.7,-4.05);
+  \draw[ratman arrow] (6.7,-4.77) -- node[ratman label, above] {\code{Advance(elapsed)}} (10.3,-4.77);
+
+  \node[ratman box, font=\sffamily\footnotesize, text width=4.75cm, minimum height=0pt] at (9.35,-5.62)
+    {Accumulate time and run one step per 10 ms. On arrival, collect cheese and update the score.};
+  \draw[ratman arrow, dashed] (10.3,-6.94) -- node[ratman label, above] {Updated game state} (6.7,-6.94);
+  \draw[ratman arrow] (6.7,-7.63) -- node[ratman label, above] {Synchronize presentation and notify bindings} (0,-7.63);
+\end{tikzpicture}

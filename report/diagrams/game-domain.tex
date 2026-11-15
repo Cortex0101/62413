@@ -1,0 +1,33 @@
+\begin{tikzpicture}[
+  domain node/.style={ratman box, minimum width=3.05cm, minimum height=1.20cm},
+  position link/.style={ratman arrow, dashed}
+]
+  \node[domain node] (maze) at (-5.0,1.8)
+    {\textbf{\code{MazeDefinition}}\\Starting layout and spawns};
+  \node[domain node] (session) at (0,1.8)
+    {\textbf{\code{GameSession}}\\Rules, score, lives};
+  \node[domain node] (topology) at (5.0,1.8)
+    {\textbf{\code{BoardTopology}}\\Legal steps and reachability};
+
+  \node[domain node] (player) at (-5.0,-0.55)
+    {\textbf{\code{Player}}\\RatMan's movement};
+  \node[domain node] (cats) at (0,-0.55)
+    {\textbf{\code{Cat}}\\State and movement};
+  \node[domain node] (food) at (5.0,-0.55)
+    {\textbf{Remaining food}\\Tile-to-food dictionary};
+
+  \node[domain node] (position) at (0,-3.0)
+    {\textbf{\code{GridPosition}}\\Row and column value};
+
+  \draw[ratman arrow] (maze.east) -- node[ratman label, above] {initializes} (session.west);
+  \draw[ratman arrow] (session.east) -- node[ratman label, above] {uses} (topology.west);
+  \draw[ratman arrow] (session.south) -- node[ratman label, right, pos=.72] {owns 0 or 4} (cats.north);
+  \draw[ratman arrow] (0,0.64) -- node[ratman label, above] {owns 1} (-5.0,0.64) -- (player.north);
+  \draw[ratman arrow] (0,0.64) -- node[ratman label, above] {stores} (5.0,0.64) -- (food.north);
+
+  \draw[position link] (player.south) -- (-5.0,-2.1) -- node[ratman label, above] {actor position} (-1.1,-2.1) -- ([xshift=-1.1cm]position.north);
+  \draw[position link] (cats.south) -- node[ratman label, right] {actor position} (position.north);
+  \draw[position link] (food.south) -- (5.0,-2.1) -- node[ratman label, above] {tile key} (1.1,-2.1) -- ([xshift=1.1cm]position.north);
+  \draw[position link] (maze.west) -- (-7.35,1.8) -- (-7.35,-3.0)
+    -- node[ratman label, above] {spawn positions} (position.west);
+\end{tikzpicture}

@@ -1,0 +1,92 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,top=25mm,bottom=24mm,left=27mm,right=27mm,headheight=25pt]{geometry}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usepackage{array,booktabs,tabularx}
+\usepackage[font=small,labelfont=bf,hypcap=false]{caption}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true,linkcolor=accent,urlcolor=accent,citecolor=accent]{hyperref}
+
+\definecolor{ink}{HTML}{202B31}
+\definecolor{accent}{HTML}{345946}
+\definecolor{muted}{HTML}{515C60}
+\definecolor{figurefill}{HTML}{F1F5F2}
+\definecolor{rulecolor}{HTML}{C9D5CE}
+\hypersetup{pdftitle={RatMan Project Report},pdfsubject={62413 C sharp project report, Autumn 2026}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\linespread{1.15}
+\raggedbottom
+\setcounter{tocdepth}{2}
+\setlength{\emergencystretch}{2em}
+\widowpenalty=10000
+\clubpenalty=10000
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\sffamily\color{muted} RatMan}
+\fancyhead[R]{\small\sffamily\color{muted} 62413 \enspace / \enspace Autumn 2026}
+\fancyfoot[R]{\small\sffamily\thepage}
+\renewcommand{\headrulewidth}{0.35pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{rulecolor}\leaders\hrule height \headrulewidth\hfill}}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\tikzset{
+  ratman box/.style={
+    draw=accent, fill=figurefill, rounded corners=2pt,
+    align=center, font=\sffamily\small, text=ink,
+    minimum width=3.9cm, minimum height=1.08cm, inner sep=5pt
+  },
+  ratman arrow/.style={draw=accent, semithick, -{Latex[length=2.0mm]}},
+  ratman label/.style={font=\sffamily\footnotesize, text=ink, inner sep=2pt}
+}
+\newcommand{\reportfigure}[3]{%
+  \par\addvspace{1em}\noindent
+  \begin{minipage}{\linewidth}
+    \centering
+    #3
+    \captionof{figure}{#2}\label{#1}
+  \end{minipage}\par\addvspace{0.75em}%
+}
+
+\begin{document}
+\color{ink}
+\begin{titlepage}
+  \thispagestyle{empty}
+  \vspace*{28mm}
+  {\large\sffamily\color{accent} 62413 \enspace / \enspace AUTUMN 2026\par}
+  \vspace{12mm}
+  {\sffamily\bfseries\fontsize{60}{65}\selectfont RatMan\par}
+  \vspace{2mm}
+  {\LARGE Project report\par}
+  \vspace{8mm}
+  {\color{accent}\rule{33mm}{1.2pt}\par}
+  \vspace{7mm}
+  {\large A maze-chase game in C\# and WPF\par}
+  \vfill
+  {\small\sffamily\color{muted} Application revision \code{c0c7c88}\par}
+\end{titlepage}
+
+\setcounter{page}{2}
+\section*{Abstract}
+\input{chapters/final-abstract}
+
+{\setlength{\parskip}{0pt}\small\tableofcontents}
+\clearpage
+\input{chapters/final-report}
+\phantomsection
+\addcontentsline{toc}{section}{References}
+\begin{thebibliography}{9}
+  \bibitem{project} RatMan project repository. \emph{Application, game engine, and MSTest suite}, application revision \code{c0c7c88}.
+  \bibitem{exam} Henrik Tange. \emph{Examination areas, 62413 / 62T25 E26}. Autumn 2026 course material.
+  \bibitem{mvvm} Microsoft. \emph{The MVVM Pattern}. Course reading, lesson 8.
+  \bibitem{ef-query} Microsoft Learn. \href{https://learn.microsoft.com/en-us/ef/core/querying/}{\emph{Querying Data in EF Core}}.
+  \bibitem{ef-save} Microsoft Learn. \href{https://learn.microsoft.com/en-us/ef/core/saving/}{\emph{Saving Data in EF Core}}.
+  \bibitem{domains} Microsoft Learn. \href{https://learn.microsoft.com/en-us/dotnet/core/porting/net-framework-tech-unavailable\#application-domains}{\emph{.NET Framework technologies unavailable on .NET: Application domains}}.
+\end{thebibliography}
+\end{document}
